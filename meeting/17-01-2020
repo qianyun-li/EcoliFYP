@@ -1,0 +1,17 @@
+# 17-01-2020 
+Meeting Notes
+* Project: E. coli bacteria image segmentation
+* Advisor: Prof. Long CHEN
+* Member: DB623033 LIN GUANGZE & DB611408 LI QIANYUN
+
+## Finished Items
+* Implement automatic thresholding of mean and variance of blocks: By calculating the mean and variance of each block and save the sorted results in two separate vectors, we try to define the thresholds of them by manually set a suitable percentile (35% and 30% respectively) of them. However, the result is not good enough compared to the constant mean and variance methods and we will continue to research more effective methods.
+* Modify the classification algorithm: Previously, we apply K-means to segment a block into 3 clusters. If the block is at the boundary or outside of the mask, we consider the brightest cluster as cells. Otherwise, the block is inside the mask, and the first two brightest clusters are considered as cells. The previous ‘1/3+2/3’ method now is combined with the ‘1/3+2/4’ methods by intersecting two sets of candidate pixels, which improved the segmentation result.
+## Discussion Summary & Challenges
+* Estimating the error range of the segmentation result is important since bacteria researchers will need this in their experience. Currently, we are still exploring how to estimate error range by some statistical methods.
+* Need a control panel for this program to support more user interactions, such as tuning parameters.
+* One automatic thresholding method can be implemented by calculating the first or second derivative of the histogram, and we can define an objective function of these derivatives to find the optimal threshold.
+* Explore more segmentation algorithm to solve the problem of connected cells. The marker-controlled watershed is a classical algorithm used for segmentation, and this algorithm needs some extra operations such as erosion to generate the marker image.
+
+## Schedule
+We plan to meet Prof. Long Chen in February after the Spring Festival holiday, during which time we will keep working on the challenges discussed above.
