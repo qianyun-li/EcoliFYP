@@ -1,4 +1,5 @@
-function [ballotBox1, ballotBox2] = vote1(img,blockSize,nOL,mask)
+function [ballotBox1, ballotBox2] = vote1(img,blockSize,nOL)
+    mask = ~(img == 0);
     global xStep yStep xEnd yEnd blockSize;
     xStep = round(blockSize(1)/nOL); 
     yStep = round(blockSize(2)/nOL);
@@ -22,7 +23,7 @@ function [ballotBox1, ballotBox2] = vote1(img,blockSize,nOL,mask)
     [aTh,vTh] = autothresh(img);
 
     for i = 1 : xStep : xEnd
-        waitbar(i/xEnd,wb,['Computing... ' num2str(i/xEnd*100) '%']);
+        waitbar(i/xEnd,wb,['Computing k-means clustering... ' num2str(i/xEnd*100) '%']);
         for j = 1 : yStep : yEnd
             B = img(i : i+blockSize(1)-1, j : j+blockSize(2)-1);
             votingResult1 = false(size(B)); votingResult2 = votingResult1;

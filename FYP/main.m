@@ -15,14 +15,24 @@ radius = [];
 imgOri = imread('image/E.Coli-1.jpg');
 img = rgb2gray(imgOri);
 figure("Name","Original Image"),imshow(img); impixelinfo;
-roi = drawcircle();
-l = addlistener(roi,'ROIClicked',@roiEventHappend);
-uiwait;
-delete(l);
 
-mask = ~(img == 0);
+% roi = drawcircle();
+% l = addlistener(roi,'ROIClicked',@roiEventHappend);
+% uiwait;
+% delete(l);
+[center, radius] = diskSeg(img);
+roi = drawcircle('Center', center, 'Radius', radius);
+mask = createMask(roi);
+img(~mask) = 0;
+rect = [center(1)-radius, center(2)-radius, radius*2, radius*2];
+img = imcrop(img, rect);
+imshow(img);
 
-img = preprocess(img,mask);
+% top hat filtering
+se = strel('disk',90);
+img = imtophat(img, se);
+
+img = preprocess(img);
 % figure, imshow(img);
 
 nOL = 3;
@@ -35,7 +45,7 @@ tVote = 0.4;
 % imgSeg = imgSeg1&imgSeg2;
 % figure('Name','Constant variance and mean'), imshow(imgSeg);
 
-[ballotBox1,ballotBox2] = vote(img,[50,50],nOL,mask);
+[ballotBox1,ballotBox2] = vote(img,[50,50],nOL);
 imgSeg1 = false(size(ballotBox1)); imgSeg2 = imgSeg1;
 imgSeg1(ballotBox1 >= tVote * nOL^2) = 1;
 imgSeg2(ballotBox2 >= tVote * nOL^2) = 1;

@@ -16,13 +16,13 @@ function varargout = pr(varargin)
 %      stop.  All inputs are passed to pr_OpeningFcn via varargin.
 %
 %      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
-%      instance to run (singleton)".
+%      instance to runbutton (singleton)".
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
 % Edit the above text to modify the response to help pr
 
-% Last Modified by GUIDE v2.5 09-Apr-2020 14:31:10
+% Last Modified by GUIDE v2.5 01-May-2020 16:07:58
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -52,12 +52,17 @@ function pr_OpeningFcn(hObject, ~, handles, varargin)
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to pr (see VARARGIN)
 
-set(handles.SelectedIm, 'visible', 'off');
-setappdata(handles.SelectedIm, 'cs', 0);
-setappdata(handles.SelectedIm, 'rs', 0);
-set(handles.SegIm, 'visible', 'off');
-set(handles.ROIRButton, 'value', 1);
-set(handles.WholeButton, 'value', 0);
+set(handles.selectedIm, 'visible', 'off');
+set(handles.segIm, 'visible', 'off');
+setappdata(handles.selectedIm, 'cs', 0);
+setappdata(handles.selectedIm, 'rs', 0);
+set(handles.drawButton, 'enable', 'off');
+set(handles.radiusSlider, 'enable', 'off');
+
+% show reminder
+remindTxt = 'Load an image to start';
+set(handles.remindStr, 'String', remindTxt);
+
 % Choose default command line output for pr
 handles.output = hObject;
 
@@ -86,128 +91,108 @@ function figure1_CreateFcn(~, ~, ~)
 % handles    empty - handles not created until after all CreateFcns called
 
 
-% --- Executes on button press in WholeButton.
-function WholeButton_Callback(~, ~, handles)
-% hObject    handle to WholeButton (see GCBO)
+% --- Executes on button press in wholeRButton.
+function wholeRButton_Callback(~, ~, handles)
+% hObject    handle to wholeRButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-set(handles.ROIRButton, 'value', 0);
-set(handles.ROIPButton, 'Enable', 'off');
-set(handles.WholeButton, 'value', 1);
-% Hint: get(hObject,'Value') returns toggle state of WholeButton
+% Hint: get(hObject,'Value') returns toggle state of wholeRButton
+    remindTxt = 'Press the CROP IMAGE to get the roi NOW';
+    set(handles.remindStr, 'String', remindTxt);
 
-
-% --- Executes on button press in ROIRButton.
-function ROIRButton_Callback(~, eventdata, handles)
-% hObject    handle to ROIRButton (see GCBO)
+% --- Executes on button press in roiRButton.
+function roiRButton_Callback(~, eventdata, handles)
+% hObject    handle to roiRButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-set(handles.ROIRButton, 'value', 1);
-set(handles.ROIPButton, 'Enable', 'on');
-set(handles.WholeButton, 'value', 0);
-warndlg('Remember to Select the ROI BEFORE Running');
-% Hint: get(hObject,'Value') returns toggle state of ROIRButton
+% Hint: get(hObject,'Value') returns toggle state of roiRButton
+    % show reminder
+    remindTxt = 'Press the CROP IMAGE to get the roi NOW';
+    set(handles.remindStr, 'String', remindTxt);
 
-% % --- Executes on button press in .
-% function ManualCheck_Callback(hObject, eventdata, handles)
-% % hObject    handle to ManualCheck (see GCBO)
-% % eventdata  reserved - to be defined in a future version of MATLAB
-% % handles    structure with handles and user data (see GUIDATA)
-% if get(handles.ManualCheck, 'value')
-%     set(handles.ROICir,'State','on');
-%     set(handles.CellCir,'State','on');
-% else
-%     set(handles.ROICir,'State','off');
-%     set(handles.CellCir,'State','off');
-% end
-
-
-% Hint: get(hObject,'Value') returns toggle state of ManualCheck
-
-% --- Executes on button press in Run.
-function Run_Callback(hObject, ~, handles)
-% hObject    handle to Run (see GCBO)
+% --- Executes on button press in runButton.
+function runButton_Callback(hObject, ~, handles)
+% hObject    handle to runButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-if ~isempty(getappdata(handles.SelectedIm, 'image'))
-    % get the image
-    img = getappdata(handles.SelectedIm, 'image');
-    
-    if get(handles.WholeButton, 'value')
-        axes(handles.SelectedIm);
-        [center, radius] = diskSeg(img);
-        roi = drawcircle('Center', center, 'Radius', radius);
-        mask = createMask(roi);
-        img(~mask) = 0;
-        rect = [center(1)-radius, center(2)-radius, radius*2, radius*2];
-        img = imcrop(img, rect);
-        setappdata(handles.SelectedIm, 'image', img);
-        imshow(img); impixelinfo;
+    if ~isempty(getappdata(handles.selectedIm, 'image'))
+        remindTxt = 'Please wait while running';
+        set(handles.remindStr, 'String', remindTxt);
+        
+        % get the image
+        img = getappdata(handles.selectedIm, 'image');
+        
+        % preprocess
+        img = preprocess(img);
+        
+        if get(handles.clusterRButton, 'value')
+            % voting algorithm
+            nOL = 3; tVote = 0.4;
+            [ballotBox1,ballotBox2] = vote(img,[50,50],nOL);
+            imgSeg1 = false(size(ballotBox1)); imgSeg2 = imgSeg1;
+            imgSeg1(ballotBox1 >= tVote * nOL^2) = 1;
+            imgSeg2(ballotBox2 >= tVote * nOL^2) = 1;
+            imgSeg = imgSeg1&imgSeg2;
+        else
+            [f,~] = ksdensity(img(:), 0:1:256);
+            [~, loc] = findpeaks(f, 0:1:256);
+            level = (loc(2)+loc(3)) / 255 * 0.45; 
+            imgSeg = imbinarize(img,level);
+        end
+        axes(handles.segIm);
+        imshow(imgSeg); impixelinfo;
+
+        % Count using Cell Size Estimation 
+        [numMin,numMax] = countCell(img, imgSeg);
+        str1 = ['Cell Size Estimation: ', num2str(round(numMin)), ' to ',  num2str(round(numMax))];
+
+    %     % Count using Circle Labeling
+    %     if(get(handles.CirCheck, 'Value'))
+    %         [cs, rs] = imfindcircles(img, [2,25], 'Sensitivity', 0.83);
+    %         setappdata(handles.selectedIm, 'cs', cs);
+    %         setappdata(handles.selectedIm, 'rs', rs);
+    %         str2 = ['Circle Labeling: ', num2str(size(cs,1))];
+    %     end
+        
+        if get(handles.semiAutoRButton, 'value')
+            % Overlay the image
+            mask = getappdata(handles.selectedIm, 'mask');
+            circles = getappdata(handles.selectedIm, 'l_cs');
+            num_p = size(circles, 1);
+            circles_x = circles(1:num_p,1);
+            circles_y = circles(1:num_p,2);
+            circles_r = getappdata(handles.selectedIm, 'l_rs');
+            [imgx, imgy] = size(img);
+            overlayIm = zeros(imgx, imgy);
+            [cols, rows] = meshgrid(1:imgx,1:imgy);
+            for i = 1 : num_p
+                overlayIm = overlayIm | logical((rows-circles_x(i)).^2 + (cols - circles_y(i)).^2 <= circles_r(i).^2)';
+            end
+            overlayIm = overlayIm & mask;
+            imgSeg = imgSeg & (~mask) | overlayIm;
+        end
+
+        % Display the results
+        axes(handles.segIm);
+        imshow(imgSeg); impixelinfo;
+        set(handles.result1Str, 'String', str1);
+    %     if(get(handles.CirCheck, 'Value'))
+    %         set(handles.result2Str, 'String', str2);
+    %     end
+
+    %     axes(handles.selectedIm);
+    % %         imshow(img); impixelinfo;
+    %         [cs, rs] = imfindcircles(img, [2,25], 'Sensitivity', 0.83);
+    %         viscircles(cs, rs, 'EdgeColor', 'b');
+    %         str = ['The approximate number of cells is ', num2str(size(cs,1))];
+    %         set(handles.result1Str, 'String', str);
+    %     drawnow;
+        remindTxt = 'Finished';
+        set(handles.remindStr, 'String', remindTxt);
     end
-    
-    % preprocess
-    mask = ~(img == 0);
-    img = preprocess(img,mask);
-    
-    % voting algorithm
-    nOL = 3; tVote = 0.4;
-    [ballotBox1,ballotBox2] = vote(img,[50,50],nOL,mask);
-    imgSeg1 = false(size(ballotBox1)); imgSeg2 = imgSeg1;
-    imgSeg1(ballotBox1 >= tVote * nOL^2) = 1;
-    imgSeg2(ballotBox2 >= tVote * nOL^2) = 1;
-    imgSeg = imgSeg1&imgSeg2;
-    axes(handles.SegIm);
-    imshow(imgSeg); impixelinfo;
-    
-    % Count using Cell Size Estimation 
-    [numMin,numMax] = countCell(imgSeg);
-    str1 = ['Cell Size Estimation: ', num2str(round(numMin)), ' to ',  num2str(round(numMax))];
-    
-    % Count using Circle Labeling
-    if(get(handles.CirCheck, 'Value'))
-        [cs, rs] = imfindcircles(img, [2,25], 'Sensitivity', 0.83);
-        setappdata(handles.SelectedIm, 'cs', cs);
-        setappdata(handles.SelectedIm, 'rs', rs);
-        str2 = ['Circle Labeling: ', num2str(size(cs,1))];
-    end
-    
-    % Overlay the image
-    mask = getappdata(handles.SelectedIm, 'mask');
-    circles = getappdata(handles.SelectedIm, 'l_cs');
-    num_p = size(circles, 1);
-    circles_x = circles(1:num_p,1);
-    circles_y = circles(1:num_p,2);
-    circles_r = getappdata(handles.SelectedIm, 'l_rs');
-    [imgx, imgy] = size(img);
-    overlayIm = zeros(imgx, imgy);
-    [cols, rows] = meshgrid(1:imgx,1:imgy);
-    for i = 1 : num_p
-        overlayIm = overlayIm | logical((rows-circles_x(i)).^2 + (cols - circles_y(i)).^2 <= circles_r(i).^2)';
-    end
-    overlayIm = overlayIm & mask;
-    imgSeg = imgSeg & (~mask) | overlayIm;
-    
-    % Display the results
-    axes(handles.SegIm);
-    imshow(imgSeg); impixelinfo;
-    set(handles.Result1Text, 'String', str1);
-    if(get(handles.CirCheck, 'Value'))
-        set(handles.Result2Text, 'String', str2);
-    end
-    
-%     axes(handles.SelectedIm);
-% %         imshow(img); impixelinfo;
-%         [cs, rs] = imfindcircles(img, [2,25], 'Sensitivity', 0.83);
-%         viscircles(cs, rs, 'EdgeColor', 'b');
-%         str = ['The approximate number of cells is ', num2str(size(cs,1))];
-%         set(handles.Result1Text, 'String', str);
-%     drawnow;
-else
-    warndlg('Please load an image first!');
-end
 
 % --------------------------------------------------------------------
 function FileMenu_Callback(hObject, eventdata, handles)
@@ -221,11 +206,11 @@ function SaveFig_Callback(hObject, eventdata, handles)
 % hObject    handle to SaveFig (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-[fname, pname] = uiputfile('*.fig');
+    [fname, pname] = uiputfile('*.fig');
 
-if ~(isequal(fname, 0) || isequal(pname, 0))
-    saveas(gcf, fullfile(pname,fname));
-end
+    if ~(isequal(fname, 0) || isequal(pname, 0))
+        saveas(gcf, fullfile(pname,fname));
+    end
 
 % --------------------------------------------------------------------
 function Save_Callback(hObject, eventdata, handles)
@@ -239,65 +224,84 @@ function SaveSegIm_Callback(hObject, eventdata, handles)
 % hObject    handle to SaveSegIm (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-if ~isempty(getappdata(handles.SegIm, 'image'))
-    [fname, pname] = uiputfile('*.bmp;*.jpg;*.png;*.jpeg;*.tif');
-    if ~(isequal(fname, 0) || isequal(pname, 0))
-        imwrite(getimage(handles.SegIm), fullfile(pname, fname));
+    if ~isempty(getappdata(handles.segIm, 'image'))
+        [fname, pname] = uiputfile('*.bmp;*.jpg;*.png;*.jpeg;*.tif');
+        if ~(isequal(fname, 0) || isequal(pname, 0))
+            imwrite(getimage(handles.segIm), fullfile(pname, fname));
+        end
+    else
+        warndlg('No segmented image found!');
     end
-else
-    warndlg('No segmented image found!');
-end
 
 % --------------------------------------------------------------------
 function SaveSelectedIm_Callback(hObject, eventdata, handles)
 % hObject    handle to SaveSelectedIm (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-if ~isempty(getappdata(handles.SelectedIm, 'image'))
-    [fname, pname] = uiputfile('*.bmp;*.jpg;*.png;*.jpeg;*.tif');
-    if ~(isequal(fname, 0) || isequal(pname, 0))
-        imwrite(getimage(handles.SelectedIm), fullfile(pname, fname));
+    if ~isempty(getappdata(handles.selectedIm, 'image'))
+        [fname, pname] = uiputfile('*.bmp;*.jpg;*.png;*.jpeg;*.tif');
+        if ~(isequal(fname, 0) || isequal(pname, 0))
+            imwrite(getimage(handles.selectedIm), fullfile(pname, fname));
+        end
+    else
+        warndlg('No selected image found!');
     end
-else
-    warndlg('No selected image found!');
-end
 
-% --------------------------------------------------------------------
-function ROICir_ClickedCallback(hObject, eventdata, handles)
-% hObject    handle to ROICir (see GCBO)
+
+% --- Executes on button press in cropButton.
+function cropButton_Callback(hObject, eventdata, handles)
+% hObject    handle to cropButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-    
-
-
-% --- Executes on button press in ROIPButton.
-function ROIPButton_Callback(hObject, eventdata, handles)
-% hObject    handle to ROIPButton (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-if ~isempty(getappdata(handles.SelectedIm, 'image'))
-    % get the image
-    if get(handles.ROIRButton, 'value')
-        roi = drawcircle();
-        setappdata(handles.SelectedIm, 'radius', []);
-        setappdata(handles.SelectedIm, 'center', []);
-        l = addlistener(roi,'ROIClicked', @(src,evt)roiSelect(src,evt,handles));
-        uiwait(handles.figure1);
-        delete(l);
-        setappdata(handles.SelectedIm, 'cs', 0);
-        setappdata(handles.SelectedIm, 'rs', 0);
-        setappdata(handles.SelectedIm, 'l_cs', []);
-        setappdata(handles.SelectedIm, 'l_rs', []);
-        set(get(handles.SegIm, 'children'), 'visible', 'off');
-        set(handles.Result1Text, 'String', []);
-        set(handles.Result2Text, 'String', []);
+    if ~isempty(getappdata(handles.selectedIm, 'image'))
+        % get the image
+        if get(handles.roiRButton, 'value')
+            roi = drawcircle();
+            setappdata(handles.selectedIm, 'radius', []);
+            setappdata(handles.selectedIm, 'center', []);
+            l = addlistener(roi,'ROIClicked', @(src,evt)roiSelect(src,evt,handles));
+            uiwait(handles.figure1);
+            delete(l);
+            setappdata(handles.selectedIm, 'cs', 0);
+            setappdata(handles.selectedIm, 'rs', 0);
+            setappdata(handles.selectedIm, 'l_cs', []);
+            setappdata(handles.selectedIm, 'l_rs', []);
+            set(get(handles.segIm, 'children'), 'visible', 'off');
+            set(handles.result1Str, 'String', []);
+            set(handles.cropButton, 'enable', 'off');
+%             set(handles.result2Str, 'String', []);
+            if get(handles.semiAutoRButton, 'value')
+                remindTxt = 'Operate the LABEL MANUALLY section';
+                set(handles.remindStr, 'String', remindTxt);
+            else
+                remindTxt = 'Choose the DEGREE';
+                set(handles.remindStr, 'String', remindTxt);
+            end
+        else
+            img = getappdata(handles.selectedIm, 'image');
+            img_ori = getappdata(handles.selectedIm, 'oriIm');
+            axes(handles.selectedIm);
+            [center, radius] = diskSeg(img);
+            roi = drawcircle('Center', center, 'Radius', radius);
+            mask = createMask(roi);
+            img(~mask) = 0;
+            img_ori(~mask) = 0;
+            rect = [center(1)-radius, center(2)-radius, radius*2, radius*2];
+            img_ori = imcrop(img_ori, rect);
+            img = imcrop(img, rect);
+            setappdata(handles.selectedIm, 'image', img);
+%             imshow(img_ori); impixelinfo;
+            handles.image1 = imshow(img_ori,'Parent',handles.selectedIm);impixelinfo;
+            set(handles.image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn,handles});
+        end
+        set(handles.cropButton, 'enable', 'off');
     end
-end
 function roiSelect(src,evt,varargin)
     handles = varargin{1};
-    img = getimage(handles.SelectedIm);
-    center = getappdata(handles.SelectedIm, 'center');
-    radius = getappdata(handles.SelectedIm, 'radius');
+    img = getimage(handles.selectedIm);
+    img_ori = getappdata(handles.selectedIm, 'oriIm');
+    center = getappdata(handles.selectedIm, 'center');
+    radius = getappdata(handles.selectedIm, 'radius');
     evname = evt.EventName;
 
     switch(evname)
@@ -305,60 +309,33 @@ function roiSelect(src,evt,varargin)
             if isequal(center,src.Center) && isequal(radius,src.Radius)
                 mask = createMask(src);
                 img(~mask) = 0;
+                img_ori(~mask) = 0;
                 rect = [src.Center(1)-src.Radius, src.Center(2)-src.Radius, src.Radius*2, src.Radius*2];
                 img = imcrop(img, rect);
-                setappdata(handles.SelectedIm, 'image', img);
+                img_ori = imcrop(img_ori, rect);
+                setappdata(handles.selectedIm, 'image', img);
                 uiresume(handles.figure1);
-                axes(handles.SelectedIm);
-                handles.image1 = imshow(img,'Parent',handles.SelectedIm);impixelinfo;
-                set(handles.image1,'ButtonDownFcn',{@SelectedIm_ButtonDownFcn,handles});
+                axes(handles.selectedIm);
+                handles.image1 = imshow(img_ori,'Parent',handles.selectedIm);impixelinfo;
+                set(handles.image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn,handles});
             else
-                setappdata(handles.SelectedIm, 'center', src.Center);
-                setappdata(handles.SelectedIm, 'radius', src.Radius); 
+                setappdata(handles.selectedIm, 'center', src.Center);
+                setappdata(handles.selectedIm, 'radius', src.Radius); 
             end
     end
-
-
-% --------------------------------------------------------------------
-function LoadImage_Callback(hObject, eventdata, handles)
-% hObject    handle to LoadImage (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-axes(handles.SelectedIm);
-[fname,pname] = uigetfile({'*.bmp;*.jpg;*.png;*.jpeg;*.tif'},...
-                'Pick an image', '/image/');
-str = [pname fname];
-if isequal(fname, 0) || isequal(pname, 0)
-    warndlg('Please select an image first!');
-    return;
-else
-    img = rgb2gray(imread(str));
-    setappdata(handles.SelectedIm, 'image', img);
-    setappdata(handles.SelectedIm, 'cs', 0);
-    setappdata(handles.SelectedIm, 'rs', 0);
-    setappdata(handles.SelectedIm, 'l_cs', []);
-    setappdata(handles.SelectedIm, 'l_rs', []);
-    set(get(handles.SegIm, 'children'), 'visible', 'off');
-    set(handles.Result1Text, 'String', []);
-    set(handles.Result2Text, 'String', []);
-    
-    handles.image1 = imshow(img,'Parent',handles.SelectedIm);
-    set(handles.image1,'ButtonDownFcn',{@SelectedIm_ButtonDownFcn,handles});
-end
-
 
 % --------------------------------------------------------------------
 function CellCir_ClickedCallback(hObject, eventdata, handles)
 % hObject    handle to ROICir (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-if strcmp(get(hObject,'State'),'on')
-    pan(handles.SelectedIm,'off');
-    zoom(handles.SelectedIm,'off');
-    enterFcn = @(figHandle, currentPoint) set(figHandle, 'Pointer', 'circle');
-    iptSetPointerBehavior(handles.SelectedIm, enterFcn);
-    iptPointerManager(handles.figure1,'enable');
-end
+    if strcmp(get(hObject,'State'),'on')
+        pan(handles.selectedIm,'off');
+        zoom(handles.selectedIm,'off');
+        enterFcn = @(figHandle, currentPoint) set(figHandle, 'Pointer', 'circle');
+        iptSetPointerBehavior(handles.selectedIm, enterFcn);
+        iptPointerManager(handles.figure1,'enable');
+    end
 
 % --------------------------------------------------------------------
 function CellCir_OffCallback(hObject, eventdata, handles)
@@ -366,109 +343,73 @@ function CellCir_OffCallback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-enterFcn = @(figHandle, currentPoint) set(figHandle, 'Pointer', 'arrow');
-iptSetPointerBehavior(handles.SelectedIm, enterFcn);
-iptPointerManager(handles.figure1,'disable');
-
-
-% --- Executes on selection change in PopupMenu.
-function PopupMenu_Callback(hObject, eventdata, handles)
-% hObject    handle to PopupMenu (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns PopupMenu contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from PopupMenu
-index_selected = get(hObject, 'Value');
-axes(handles.SelectedIm);
-if(index_selected == 2)
-    cs = getappdata(handles.SelectedIm, 'cs');
-    rs = getappdata(handles.SelectedIm, 'rs');
-    if(cs == 0 | rs == 0)
-       set(get(handles.SelectedIm, 'children'), 'visible', 'off');
-    else
-        viscircles(cs, rs, 'EdgeColor', 'b');
-    end
-else
-    img = getappdata(handles.SelectedIm, 'image');
-    imshow(img); impixelinfo;
-end
-
-% --- Executes during object creation, after setting all properties.
-function PopupMenu_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to PopupMenu (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-set(hObject, 'String', {'Original Image'; 'Labeled Image'});
-
+    enterFcn = @(figHandle, currentPoint) set(figHandle, 'Pointer', 'arrow');
+    iptSetPointerBehavior(handles.selectedIm, enterFcn);
+    iptPointerManager(handles.figure1,'disable');
 
 % --- Executes on mouse press over axes background.
-function SelectedIm_ButtonDownFcn(hObject, eventdata, handles)
-% hObject    handle to SelectedIm (see GCBO)
+function selectedIm_ButtonDownFcn(hObject, eventdata, handles)
+% hObject    handle to selectedIm (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-if ~strcmp(get(handles.CellCir,'State'),'on')
-    return;
-end
-point = get(handles.SelectedIm,'CurrentPoint');
-point = point(1,1:2);
-c = getappdata(handles.SelectedIm, 'c');
-r = getappdata(handles.SelectedIm, 'r');
-if (point(1)-c(1))^2 + (point(2)-c(2))^2 >= r^2
-       return;
-end
-cs = getappdata(handles.SelectedIm, 'l_cs');
-rs = getappdata(handles.SelectedIm, 'l_rs');
-cs = [cs; point];
-rs = [rs get(handles.radiusSlider, 'Value')];
-handles.v = viscircles(cs, rs, 'Color', 'b');
-set(handles.image1,'ButtonDownFcn',{@SelectedIm_ButtonDownFcn,handles});
-set(handles.v,'PickableParts','none');
-setappdata(handles.SelectedIm, 'l_cs', cs);
-setappdata(handles.SelectedIm, 'l_rs', rs);
-set(handles.v,'HitTest','off');
+    if ~strcmp(get(handles.CellCir,'State'),'on')
+        return;
+    end
+    point = get(handles.selectedIm,'CurrentPoint');
+    point = point(1,1:2);
+    c = getappdata(handles.selectedIm, 'c');
+    r = getappdata(handles.selectedIm, 'r');
+    if (point(1)-c(1))^2 + (point(2)-c(2))^2 >= r^2
+           return;
+    end
+    cs = getappdata(handles.selectedIm, 'l_cs');
+    rs = getappdata(handles.selectedIm, 'l_rs');
+    cs = [cs; point];
+    rs = [rs get(handles.radiusSlider, 'Value')];
+    handles.v = viscircles(cs, rs, 'Color', 'b');
+    set(handles.image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn,handles});
+    set(handles.v,'PickableParts','none');
+    setappdata(handles.selectedIm, 'l_cs', cs);
+    setappdata(handles.selectedIm, 'l_rs', rs);
+    set(handles.v,'HitTest','off');
 
 
 % --- Executes on button press in drawROIButton.
-function drawROIButton_Callback(hObject, eventdata, handles)
+function drawButton_Callback(hObject, eventdata, handles)
 % hObject    handle to drawROIButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-if ~isempty(getappdata(handles.SelectedIm, 'image'))
-    roi = drawcircle();
-    setappdata(handles.SelectedIm, 'r', []);
-    setappdata(handles.SelectedIm, 'c', []);
-    k = addlistener(roi,'ROIClicked', @(src,evt)roiDraw(src,evt,handles));
-    uiwait(handles.figure1);
-    delete(k);
-end
+    if ~isempty(getappdata(handles.selectedIm, 'image'))
+        remindTxt = "Draw the ROI and Circle the cells using the CIRCLE IN TOOLBAR";
+        set(handles.remindStr, 'String', remindTxt);
+        roi = drawcircle();
+        setappdata(handles.selectedIm, 'r', []);
+        setappdata(handles.selectedIm, 'c', []);
+        k = addlistener(roi,'ROIClicked', @(src,evt)roiDraw(src,evt,handles));
+        uiwait(handles.figure1);
+        delete(k);
+    end
 function roiDraw(src,evt,varargin)
     handles = varargin{1};
-    center = getappdata(handles.SelectedIm, 'c');
-    radius = getappdata(handles.SelectedIm, 'r');
+    center = getappdata(handles.selectedIm, 'c');
+    radius = getappdata(handles.selectedIm, 'r');
     evname = evt.EventName;
     
     switch(evname)
         case{'ROIClicked'}
             if isequal(center,src.Center) && isequal(radius,src.Radius)
                 mask = createMask(src);
-                setappdata(handles.SelectedIm, 'mask', mask);
-                img = getappdata(handles.SelectedIm,'image');
+                setappdata(handles.selectedIm, 'mask', mask);
+                img = getappdata(handles.selectedIm,'image');
                 uiresume(handles.figure1);
-                handles.image1 = imshow(img, 'Parent', handles.SelectedIm);
+                handles.image1 = imshow(img, 'Parent', handles.selectedIm);
                 handles.h = viscircles(center, radius);
-                set(handles.image1,'ButtonDownFcn',{@SelectedIm_ButtonDownFcn,handles});
+                set(handles.image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn,handles});
                 set(handles.h,'PickableParts','none');
                 set(handles.h,'HitTest','off');
             else
-                setappdata(handles.SelectedIm, 'c', src.Center);
-                setappdata(handles.SelectedIm, 'r', src.Radius); 
+                setappdata(handles.selectedIm, 'c', src.Center);
+                setappdata(handles.selectedIm, 'r', src.Radius); 
             end
     end
 
@@ -481,8 +422,8 @@ function radiusSlider_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
-slider_value = get(hObject, 'Value');
-set(handles.radiusText, 'String', num2str(slider_value));
+    slider_value = get(hObject, 'Value');
+    set(handles.radiusText, 'String', num2str(slider_value));
 
 
 % --- Executes during object creation, after setting all properties.
@@ -492,9 +433,91 @@ function radiusSlider_CreateFcn(hObject, eventdata, handles)
 % handles    empty - handles not created until after all CreateFcns called
 
 % Hint: slider controls usually have a light gray background.
-if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor',[.9 .9 .9]);
-end
-set(hObject, 'Min', 6);
-set(hObject, 'Max', 20);
-set(hObject, 'Value', 13);
+    if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+        set(hObject,'BackgroundColor',[.9 .9 .9]);
+    end
+    set(hObject, 'Min', 5);
+    set(hObject, 'Max', 20);
+    set(hObject, 'Value', 13);
+
+
+% --- Executes on button press in loadImButton.
+function loadImButton_Callback(hObject, eventdata, handles)
+% hObject    handle to loadImButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    axes(handles.selectedIm);
+    [fname,pname] = uigetfile({'*.bmp;*.jpg;*.png;*.jpeg;*.tif'},...
+                    'Pick an image', '/image/');
+    str = [pname fname];
+    if isequal(fname, 0) || isequal(pname, 0)
+        return;
+    else
+        img_ori = rgb2gray(imread(str));
+        setappdata(handles.selectedIm, 'oriIm', img_ori);
+        setappdata(handles.selectedIm, 'cs', 0);
+        setappdata(handles.selectedIm, 'rs', 0);
+        setappdata(handles.selectedIm, 'l_cs', []);
+        setappdata(handles.selectedIm, 'l_rs', []);
+        set(handles.roiRButton, 'value', 1);
+        set(handles.autoRButton, 'value', 1);
+        set(handles.clusterRButton, 'value', 1);
+        set(get(handles.segIm, 'children'), 'visible', 'off');
+        set(handles.result1Str, 'String', []);
+        set(handles.result2Str, 'String', []);
+        set(handles.cropButton, 'enable', 'on');
+        remindTxt = 'Press the CROP IMAGE Button NOW to get the ROI';
+        set(handles.remindStr, 'String', remindTxt);
+        
+        % top-hat filtering
+        se = strel('disk',90);
+        img = imtophat(img_ori, se);
+        setappdata(handles.selectedIm, 'image', img);
+        
+        handles.image1 = imshow(img_ori,'Parent',handles.selectedIm);
+        set(handles.image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn,handles});
+    end
+
+
+% --- Executes on button press in autoRButton.
+function autoRButton_Callback(hObject, eventdata, handles)
+% hObject    handle to autoRButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of autoRButton
+    set(handles.drawButton, 'enable', 'off');
+    set(handles.radiusSlider, 'enable', 'off');
+    remindTxt = 'Choose the METHOD and RUN';
+    set(handles.remindStr, 'String', remindTxt);
+
+
+% --- Executes on button press in semiAutoRButton.
+function semiAutoRButton_Callback(hObject, eventdata, handles)
+% hObject    handle to semiAutoRButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of semiAutoRButton
+    set(handles.drawButton, 'enable', 'on');
+    set(handles.radiusSlider, 'enable', 'on');
+    remindTxt = 'Operate the LABEL MANUALLY section';
+    set(handles.remindStr, 'String', remindTxt);
+
+
+% --- Executes on button press in clusterRButton.
+function clusterRButton_Callback(hObject, eventdata, handles)
+% hObject    handle to clusterRButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of clusterRButton
+
+
+% --- Executes on button press in threshRButton.
+function threshRButton_Callback(hObject, eventdata, handles)
+% hObject    handle to threshRButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of threshRButton

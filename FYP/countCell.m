@@ -25,10 +25,13 @@ function [numCellsMin,numCellsMax]  = countCell(img, bw)
     end
     
     [~, edges] = histcounts(count(3:end));
-    [f, ~] = ksdensity(count,edges(1):100:edges(end));
+    [f, xi] = ksdensity(count,edges(1):100:edges(end));
     [~, loc] = findpeaks(f, edges(1):100:edges(end));
     
     cellSize = loc(1);
+    if loc(1) < 200
+        cellSize = loc(2);
+    end
     cellSizeMin = cellSize * 0.95;
     cellSizeMax = cellSize * 1.15;
     

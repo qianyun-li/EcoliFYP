@@ -53,18 +53,9 @@ mask = createMask(roi);
 imgCrop(~mask) = 0;
 rect = [center(1)-ROIR, center(2)-ROIR, ROIR*2, ROIR*2];
 ROI = imcrop(imgCrop, rect);
-imshow(ROI);
+figure, imshow(ROI);
 
-% denoising
-ROI = wiener2(ROI, [8 8]);
-% gaussian filter
-ROI = imgaussfilt(ROI,0.75);
-% open operation
-SE = strel('disk',7);
-ROI = imopen(ROI,SE);
-% increase contrast
-ROI = adapthisteq(ROI);
-
+ROI = preprocess(ROI);
 
 [f,xi] = ksdensity(ROI(:), 0:1:256);
 [~, loc] = findpeaks(f, 0:1:256);

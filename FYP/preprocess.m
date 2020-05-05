@@ -1,4 +1,6 @@
-function img = preprocess(img,mask)
+function img = preprocess(img)
+    mask = ~(img == 0);
+    
     w = 25; img_filtered = img;
     img_filtered(mask==0) = round(mean(img,'all'));
     img_filtered = roifilt2(img_filtered,mask,@(x) ordfilt2(x,1,ones(w,w),'symmetric'));
@@ -6,11 +8,11 @@ function img = preprocess(img,mask)
     img = imsubtract(img,img_filtered);
     img = roifilt2(img,mask,@(x) imadjust(x,stretchlim(x)));
 
-%     img = wiener2(img, [6 6]);
 %     img = medfilt2(img);
     img = imgaussfilt(img,0.75);
     
     img = imadjust(img);
+%     img = adapthisteq(img);
     
     SE = strel('disk',7);
     img = imopen(img,SE);
