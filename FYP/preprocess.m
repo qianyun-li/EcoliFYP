@@ -1,4 +1,7 @@
 function img = preprocess(img)
+    % Fix image size to 2200 x 2200
+    img = imresize(img, 2200 / size(img,2));
+
     mask = ~(img == 0);
     
     w = 25; img_filtered = img;
