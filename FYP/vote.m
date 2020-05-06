@@ -1,6 +1,6 @@
-function [ballotBox1, ballotBox2] = vote1(img,blockSize,nOL)
+function [ballotBox1, ballotBox2] = vote(img,blockSize,nOL)
     mask = ~(img == 0);
-    global xStep yStep xEnd yEnd blockSize;
+    global xStep yStep xEnd yEnd;
     xStep = round(blockSize(1)/nOL); 
     yStep = round(blockSize(2)/nOL);
     blockSize(1) = xStep * nOL; 
@@ -33,7 +33,7 @@ function [ballotBox1, ballotBox2] = vote1(img,blockSize,nOL)
             end
             v0 = var(double(B),0,'all');
             avg0 = mean(double(B),'all');        
-            if ((v0 < vTh) & (avg0 < aTh))
+            if ((v0 < vTh) && (avg0 < aTh))
                 continue;
             end
             

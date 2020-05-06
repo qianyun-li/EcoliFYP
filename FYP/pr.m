@@ -450,7 +450,6 @@ else
     setappdata(handles.selectedIm, 'rs', 0);
     setappdata(handles.selectedIm, 'l_cs', []);
     setappdata(handles.selectedIm, 'l_rs', []);
-    set(handles.roiRButton, 'value', 1);
     set(handles.autoRButton, 'value', 1);
     set(handles.clusterRButton, 'value', 1);
     set(get(handles.segIm, 'children'), 'visible', 'off');
