@@ -460,8 +460,8 @@ else
     remindTxt = 'Press the CROP IMAGE Button NOW to get the ROI';
     set(handles.remindStr, 'String', remindTxt);
     
-    % Resize image width to 3120
-    img_ori = imresize(img_ori, 3120 / size(img_ori,2));
+    % Fix image size to 2200 x 2200
+    img_ori = imresize(img_ori, 2200 / size(img_ori,2));
     setappdata(handles.selectedIm, 'oriIm', img_ori);
     
     % top-hat filtering
