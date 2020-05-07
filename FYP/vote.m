@@ -89,14 +89,18 @@ function [aTh, vTh] = autothresh(img, xStep, yStep, xEnd, yEnd, blockSize)
     [~, edgeV] = histcounts(v);
     vStep = edgeV(2)-edgeV(1);
     [f1, xi1] = ksdensity(v, 0:vStep:edgeV(end));
-    [~, vLoc] = findpeaks(f1);
-    vTh = (xi1(vLoc(1)) + vStep / 2) * 0.65;
+    [~, vLoc] = findpeaks(f1,0:vStep:edgeV(end));
+    vTh = (vLoc(1) + vStep / 2) * 0.65;
     
     [~, edgeAvg] = histcounts(avg);
     aStep = edgeAvg(2)-edgeAvg(1);
     [f2, xi2] = ksdensity(avg, 0:aStep:edgeAvg(end));
-    [~, aLoc] = findpeaks(f2);
-    aTh = (xi2(aLoc(1)) + aStep / 2) * 0.65;
+    [~, aLoc] = findpeaks(f2, 0:aStep:edgeAvg(end));
+    if size(aLoc,2) > 1
+        aTh = (aLoc(2) + aStep / 2) * 0.65;
+    else
+        aTh = (aLoc(1) + aStep / 2) * 0.65;
+    end
     
 %     figure("Name","variance histogram"); histV = histogram(v); histV; %function histcounts
 %     figure("Name","average  histogram"); histAvg = histogram(avg); histAvg;
