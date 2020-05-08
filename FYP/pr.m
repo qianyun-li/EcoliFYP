@@ -22,7 +22,7 @@ function varargout = pr(varargin)
 
 % Edit the above text to modify the response to help pr
 
-% Last Modified by GUIDE v2.5 06-May-2020 20:51:54
+% Last Modified by GUIDE v2.5 09-May-2020 02:57:31
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -58,6 +58,7 @@ setappdata(handles.selectedIm, 'cs', 0);
 setappdata(handles.selectedIm, 'rs', 0);
 set(handles.drawButton, 'enable', 'off');
 set(handles.radiusSlider, 'enable', 'off');
+setappdata(handles.figure1, 'imgLoaded', false);
 
 % show reminder
 remindTxt = 'Load an image to start';
@@ -192,6 +193,8 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     %     drawnow;
     remindTxt = 'Finished';
     set(handles.remindStr, 'String', remindTxt);
+    
+    set(gca,{'xlim','ylim'}, getappdata(handles.figure1, 'original_zoom_level'))
 end
 
 % --------------------------------------------------------------------
@@ -254,7 +257,7 @@ function cropButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-img = getappdata(handles.selectedIm, 'image'); 
+img = getappdata(handles.selectedIm, 'image');
 if ~isempty(img)
     % Got the image
     if get(handles.wholeRButton, 'value') == false
@@ -309,6 +312,7 @@ switch(evname)
             axes(handles.selectedIm);
             handles.image1 = imshow(img_ori,'Parent',handles.selectedIm);impixelinfo;
             set(handles.image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn,handles});
+            setappdata(handles.figure1, 'original_zoom_level', get(gca,{'xlim','ylim'}));
         else
             setappdata(handles.selectedIm, 'center', src.Center);
             setappdata(handles.selectedIm, 'radius', src.Radius);
@@ -323,9 +327,9 @@ function CellCir_ClickedCallback(hObject, eventdata, handles)
 if strcmp(get(hObject,'State'),'on')
     pan(handles.selectedIm,'off');
     zoom(handles.selectedIm,'off');
-    enterFcn = @(figHandle, currentPoint) set(figHandle, 'Pointer', 'circle');
-    iptSetPointerBehavior(handles.selectedIm, enterFcn);
-    iptPointerManager(handles.figure1,'enable');
+    set(handles.figure1, 'Pointer', 'custom', 'PointerShapeCData',...
+        generate_pointer([16,16], get(handles.radiusSlider,...
+        'Value')), 'PointerShapeHotSpot', [16,16]);
 end
 
 % --------------------------------------------------------------------
@@ -334,9 +338,7 @@ function CellCir_OffCallback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-enterFcn = @(figHandle, currentPoint) set(figHandle, 'Pointer', 'arrow');
-iptSetPointerBehavior(handles.selectedIm, enterFcn);
-iptPointerManager(handles.figure1,'disable');
+set(handles.figure1, 'Pointer', 'arrow');
 
 % --- Executes on mouse press over axes background.
 function selectedIm_ButtonDownFcn(hObject, eventdata, handles)
@@ -356,7 +358,14 @@ end
 cs = getappdata(handles.selectedIm, 'l_cs');
 rs = getappdata(handles.selectedIm, 'l_rs');
 cs = [cs; point];
-rs = [rs get(handles.radiusSlider, 'Value')];
+
+w = ceil(getpixelposition(handles.selectedIm));
+w = w(3);
+x = handles.selectedIm.XLim(2)-handles.selectedIm.XLim(1);
+r_pointer = get(handles.radiusSlider, 'Value');
+r_new = r_pointer * x / w;
+
+rs = [rs r_new];
 handles.v = viscircles(cs, rs, 'Color', 'b');
 set(handles.image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn,handles});
 set(handles.v,'PickableParts','none');
@@ -380,6 +389,7 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     uiwait(handles.figure1);
     delete(k);
 end
+
 function roiDraw(src,evt,varargin)
 handles = varargin{1};
 center = getappdata(handles.selectedIm, 'c');
@@ -392,12 +402,24 @@ switch(evname)
             mask = createMask(src);
             setappdata(handles.selectedIm, 'mask', mask);
             img = getappdata(handles.selectedIm,'image');
+            img_ori = getappdata(handles.selectedIm, 'oriIm');
+            if isequal(size(img), size(img_ori))
+                % The image doesn't get cropped
+                img = img_ori;
+            end
+            
+            % Get previous zoom level
+            zoom_level = get(gca,{'xlim','ylim'});
+            
             uiresume(handles.figure1);
             handles.image1 = imshow(img, 'Parent', handles.selectedIm);
             handles.h = viscircles(center, radius);
             set(handles.image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn,handles});
             set(handles.h,'PickableParts','none');
             set(handles.h,'HitTest','off');
+            
+            % Return to the previous zoom level
+            set(gca,{'xlim','ylim'}, zoom_level)
         else
             setappdata(handles.selectedIm, 'c', src.Center);
             setappdata(handles.selectedIm, 'r', src.Radius);
@@ -415,6 +437,12 @@ function radiusSlider_Callback(hObject, eventdata, handles)
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 slider_value = get(hObject, 'Value');
 set(handles.radiusText, 'String', num2str(slider_value));
+set(handles.figure1, 'Pointer', 'custom', 'PointerShapeCData',...
+        generate_pointer([16,16], get(handles.radiusSlider,...
+        'Value')), 'PointerShapeHotSpot', [16,16]);
+if strcmp(get(handles.CellCir,'State'),'off')
+    set(handles.CellCir,'State','on')
+end
 
 
 % --- Executes during object creation, after setting all properties.
@@ -427,9 +455,10 @@ function radiusSlider_CreateFcn(hObject, eventdata, handles)
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
-set(hObject, 'Min', 5);
-set(hObject, 'Max', 20);
-set(hObject, 'Value', 13);
+set(hObject, 'Min', 2);
+set(hObject, 'Max', 15);
+set(hObject, 'Value', 8);
+set(hObject, 'SliderStep', [1/13 , 1/13]);
 
 
 % --- Executes on button press in loadImButton.
@@ -463,13 +492,15 @@ else
     img_ori = imresize(img_ori, 3120 / size(img_ori,2));
     setappdata(handles.selectedIm, 'oriIm', img_ori);
     
+    handles.image1 = imshow(img_ori,'Parent',handles.selectedIm);
+    
     % top-hat filtering
     se = strel('disk',90);
     img = imtophat(img_ori, se);
     setappdata(handles.selectedIm, 'image', img);
     
-    handles.image1 = imshow(img_ori,'Parent',handles.selectedIm);
-    set(handles.image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn,handles});
+    setappdata(handles.figure1, 'imgLoaded', true);
+    setappdata(handles.figure1, 'original_zoom_level', get(gca,{'xlim','ylim'}));
 end
 
 
@@ -485,7 +516,6 @@ set(handles.radiusSlider, 'enable', 'off');
 remindTxt = 'Choose the METHOD and RUN';
 set(handles.remindStr, 'String', remindTxt);
 
-
 % --- Executes on button press in semiAutoRButton.
 function semiAutoRButton_Callback(hObject, eventdata, handles)
 % hObject    handle to semiAutoRButton (see GCBO)
@@ -493,11 +523,15 @@ function semiAutoRButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of semiAutoRButton
+if getappdata(handles.figure1, 'imgLoaded') == false
+    return
+end
+
 set(handles.drawButton, 'enable', 'on');
 set(handles.radiusSlider, 'enable', 'on');
 remindTxt = 'Operate the LABEL MANUALLY section';
 set(handles.remindStr, 'String', remindTxt);
-
+set(handles.radiusText, 'String', num2str(get(handles.radiusSlider, 'Value')));
 
 % --- Executes on button press in clusterRButton.
 function clusterRButton_Callback(hObject, eventdata, handles)
@@ -526,3 +560,72 @@ function AutoDetectionRButton_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of AutoDetectionRButton
 remindTxt = 'Press the CROP IMAGE to get the roi NOW';
 set(handles.remindStr, 'String', remindTxt);
+
+
+% --- Executes on scroll wheel click while the figure is in focus.
+function figure1_WindowScrollWheelFcn(hObject, eventdata, handles)
+% hObject    handle to figure1 (see GCBO)
+% eventdata  structure with the following fields (see MATLAB.UI.FIGURE)
+%	VerticalScrollCount: signed integer indicating direction and number of clicks
+%	VerticalScrollAmount: number of lines scrolled for each click
+% handles    structure with handles and user data (see GUIDATA)
+if ~strcmp(get(handles.radiusSlider, 'enable'), 'on')
+    return
+end
+
+value = get(handles.radiusSlider, 'Value');
+
+switch(eventdata.VerticalScrollCount)
+    case -1
+        % Mouse wheel roll up
+        if value < get(handles.radiusSlider, 'Max')
+           set(handles.radiusSlider, 'Value', value + 1); 
+           set(handles.radiusText, 'String', num2str(value+1));
+        end
+    case 1
+        % Mouse wheel roll down
+        if value > get(handles.radiusSlider, 'Min')
+           set(handles.radiusSlider, 'Value', value - 1);
+           set(handles.radiusText, 'String', num2str(value-1));
+        end
+end
+
+if strcmp(get(handles.CellCir,'State'),'on')
+    set(handles.figure1, 'Pointer', 'custom', 'PointerShapeCData',...
+        generate_pointer([16,16], get(handles.radiusSlider,...
+        'Value')), 'PointerShapeHotSpot', [16,16]);
+end
+
+
+% --- Executes on key press with focus on figure1 or any of its controls.
+function figure1_WindowKeyPressFcn(hObject, eventdata, handles)
+% hObject    handle to figure1 (see GCBO)
+% eventdata  structure with the following fields (see MATLAB.UI.FIGURE)
+%	Key: name of the key that was pressed, in lower case
+%	Character: character interpretation of the key(s) that was pressed
+%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
+% handles    structure with handles and user data (see GUIDATA)
+if ~strcmp(get(handles.radiusSlider, 'enable'), 'on')
+    return
+end
+
+value = get(handles.radiusSlider, 'Value');
+
+switch(eventdata.Key)
+    case 'q'
+        if value < get(handles.radiusSlider, 'Max')
+           set(handles.radiusSlider, 'Value', value + 1); 
+           set(handles.radiusText, 'String', num2str(value+1));
+        end
+    case 'e'
+        if value > get(handles.radiusSlider, 'Min')
+           set(handles.radiusSlider, 'Value', value - 1);
+           set(handles.radiusText, 'String', num2str(value-1));
+        end
+end
+
+if strcmp(get(handles.CellCir,'State'),'on')
+    set(handles.figure1, 'Pointer', 'custom', 'PointerShapeCData',...
+        generate_pointer([16,16], get(handles.radiusSlider,...
+        'Value')), 'PointerShapeHotSpot', [16,16]);
+end
