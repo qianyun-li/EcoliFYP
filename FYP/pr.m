@@ -51,6 +51,7 @@ function pr_OpeningFcn(hObject, ~, handles, varargin)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to pr (see VARARGIN)
+movegui('center');
 
 set(handles.selectedIm, 'visible', 'off');
 set(handles.segIm, 'visible', 'off');
