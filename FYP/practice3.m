@@ -1,5 +1,6 @@
+clear; clc;
+
 img = rgb2gray(imread('image/E.Coli-1.jpg'));
-figure,imshow(img);
 % img = rgb2gray(imread('image/E.Coli-2.jpg'));
 % img = rgb2gray(imread('image/E.Coli+PtCo-1.jpg'));
 % img = rgb2gray(imread('image/E.Coli+PtCo-1 small.jpg'));
@@ -9,20 +10,23 @@ figure,imshow(img);
 % img = rgb2gray(imread('image/LB+PtCo-1.jpg'));
 % img = rgb2gray(imread('image/LB+PtCo-2.jpg'));
 % img = uint8(ones(size(img))*255) - img;
+figure,imshow(img);
 
 % tophat filtering
 se = strel('disk',90);
 img_ = imtophat(img, se);
 imshow(img_);
 
-[sx, sy] = SobelEdgeOperator(img_);
+img_s = imresize(img_, 0.1);
+[sx, sy] = SobelEdgeOperator(img_s);
 mag =  sqrt(sx.^2 + sy.^2);
 grayImage = uint8(255 * mat2gray(mag));
 level = graythresh(grayImage);
 bw = imbinarize(grayImage,level);
+bw = imresize(bw,10);
 
 mask = imfill(bw, 'holes');
-mask = bwareaopen(mask, 2000);
+mask = bwareaopen(mask, 10000);
 
 img_(~mask) = 0;
 
@@ -51,19 +55,22 @@ ROIR = fix(dishR * 0.82);
 roi = drawcircle('Center', center, 'Radius', ROIR);
 mask = createMask(roi);
 imgCrop(~mask) = 0;
+% rect = [center(1)-ROIR, center(2)-ROIR, ROIR*2, ROIR*2];
 rect = [center(1)-ROIR, center(2)-ROIR, ROIR*2, ROIR*2];
 ROI = imcrop(imgCrop, rect);
 figure, imshow(ROI);
 
 ROI = preprocess(ROI);
 
-[f,xi] = ksdensity(ROI(:), 0:1:256);
-[~, loc] = findpeaks(f, 0:1:256);
-level = (loc(2)+loc(3)) / 255 * 0.45; 
-bw = imbinarize(ROI,level);
-imshow(bw);
+x = 0:5:255;
+[f,~] = ksdensity(ROI(:),x);
+[num, loc] = findpeaks(f,x);
+ROI_ = ROI;
+ROI_(ROI_==0) = loc(1);
 
-stats = regionprops(bw, 'basic');
+level = graythresh(ROI_);
+bw = imbinarize(ROI_,level);
+figure,imshow(bw);
 
 
 

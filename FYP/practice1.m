@@ -1,5 +1,14 @@
 % read image
 img = rgb2gray(imread('image/E.Coli-1.jpg')); % for tophat
+% img = rgb2gray(imread('image/E.Coli-2.jpg'));
+% img = rgb2gray(imread('image/E.Coli+PtCo-1.jpg'));
+% img = rgb2gray(imread('image/E.Coli+PtCo-2.jpg'));
+% img = rgb2gray(imread('image/LB-1.jpg'));
+% img = rgb2gray(imread('image/LB-2.jpg'));
+% img = rgb2gray(imread('image/LB+PtCo-1.jpg'));
+% img = rgb2gray(imread('image/LB+PtCo-2.jpg'));
+
+
 % img = imread('image/E.coli-1.jpg'); % for gamma
 figure, imshow(img);
 
@@ -64,7 +73,7 @@ img_ = preprocess(img);
 % tophat filtering thresh
 [f,xi] = ksdensity(img_(:), 0:1:256);
 [~, loc] = findpeaks(f, 0:1:256);
-level = (loc(2)+loc(3)) / 255 * 0.45; 
+level = (loc(2)+loc(3)) / 255 * 0.35; 
 bw = imbinarize(img_,level);
 figure, imshow(bw);
 

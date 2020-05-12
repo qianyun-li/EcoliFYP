@@ -13,14 +13,14 @@ function [ballotBox1, ballotBox2] = vote(img,blockSize,nOL)
     mask = padarray(mask, blockSize, 'both');
     ballotBox1 = uint32(zeros(size(img)));
     ballotBox2 = ballotBox1;
-    wb = waitbar(0,'Voting...');
     xEnd = m-mod(m,blockSize(1))+1+2*blockSize(1);
     yEnd = n-mod(n,blockSize(2))+1+2*blockSize(2);
     nSeg1 = 3;  nSeg2 = 4;
 %     vTh = 1500; aTh = 80;
 
     [aTh,vTh] = autothresh(img, xStep, yStep, xEnd, yEnd, blockSize);
-
+    
+    wb = waitbar(0,'Voting...');
     for i = 1 : xStep : xEnd
         waitbar(i/xEnd,wb,['Computing k-means clustering... ' num2str(i/xEnd*100) '%']);
         for j = 1 : yStep : yEnd
@@ -86,21 +86,42 @@ function [aTh, vTh] = autothresh(img, xStep, yStep, xEnd, yEnd, blockSize)
         end
     end
     
-    [~, edgeV] = histcounts(v);
-    vStep = edgeV(2)-edgeV(1);
-    [f1, xi1] = ksdensity(v, 0:vStep:edgeV(end));
-    [~, vLoc] = findpeaks(f1,0:vStep:edgeV(end));
-    vTh = (vLoc(1) + vStep / 2) * 0.65;
+    vStep = 100;
+    x1 = 0:vStep:ceil(max(v));
+    [f1, ~] = ksdensity(v, x1);
+    tf = islocalmin(f1);
+    i = find(tf);
+    min1 = x1(i(1));
     
-    [~, edgeAvg] = histcounts(avg);
-    aStep = edgeAvg(2)-edgeAvg(1);
-    [f2, xi2] = ksdensity(avg, 0:aStep:edgeAvg(end));
-    [~, aLoc] = findpeaks(f2, 0:aStep:edgeAvg(end));
-    if size(aLoc,2) > 1
-        aTh = (aLoc(2) + aStep / 2) * 0.65;
+%     [num1, vLoc] = findpeaks(f1,x1);
+%     [~, index1] = min(num1);
+%     max1 = vLoc(index1);
+   
+    vTh = min1 * 1.20;
+%     vTh = (min1+max1)* 0.5;
+    
+    aStep = 5;
+    x2 = 0:aStep:ceil(max(avg));
+    [f2, ~] = ksdensity(avg, x2);
+    
+    startIdx = 4;
+    [num2, aLoc] = findpeaks(f2(startIdx:end), x2(startIdx:end));
+    [~, index2] = max(num2);
+    max2 = aLoc(index2);
+    
+    tf = islocalmin(f2);
+    i = find(tf > 0);
+    
+    if(size(i,2) == 1) 
+        min2 = x2(i(1));
     else
-        aTh = (aLoc(1) + aStep / 2) * 0.65;
+%         diff1 = [0 diff(f2)];
+%         i = find(diff1 > 0);
+%         min2 = x2(i(1));
+        min2 = x2(i(2));
     end
+    
+    aTh = (min2 + max2) * 0.43;
     
 %     figure("Name","variance histogram"); histV = histogram(v); histV; %function histcounts
 %     figure("Name","average  histogram"); histAvg = histogram(avg); histAvg;
