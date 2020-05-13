@@ -1,3 +1,5 @@
 
 *.asv
 .DS_Store
+FYP/vote_test.m
+FYP/kmeansCluster_test.m

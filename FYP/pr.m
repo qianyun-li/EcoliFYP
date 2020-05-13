@@ -22,7 +22,7 @@ function varargout = pr(varargin)
 
 % Edit the above text to modify the response to help pr
 
-% Last Modified by GUIDE v2.5 11-May-2020 14:15:10
+% Last Modified by GUIDE v2.5 14-May-2020 05:23:58
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -60,6 +60,7 @@ setappdata(handles.selectedIm, 'rs', 0);
 set(handles.drawButton, 'enable', 'off');
 set(handles.radiusSlider, 'enable', 'off');
 setappdata(handles.figure1, 'imgLoaded', false);
+setappdata(handles.figure1, 'nOL', 3);
 
 % show reminder
 remindTxt = 'Load an image to start';
@@ -86,39 +87,11 @@ function varargout = pr_OutputFcn(~, ~, handles)
 varargout{1} = handles.output;
 
 
-% --- Executes during object creation, after setting all properties.
-function figure1_CreateFcn(~, ~, ~)
-% hObject    handle to figure1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-
-% --- Executes on button press in wholeRButton.
-function wholeRButton_Callback(~, ~, handles)
-% hObject    handle to wholeRButton (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of wholeRButton
-remindTxt = 'Press the CROP IMAGE to get the roi NOW';
-set(handles.remindStr, 'String', remindTxt);
-
-% --- Executes on button press in roiRButton.
 function roiRButton_Callback(~, eventdata, handles)
-% hObject    handle to roiRButton (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of roiRButton
-% show reminder
 remindTxt = 'Press the CROP IMAGE to get the roi NOW';
 set(handles.remindStr, 'String', remindTxt);
 
-% --- Executes on button press in runButton.
 function runButton_Callback(hObject, ~, handles)
-% hObject    handle to runButton (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 if ~isempty(getappdata(handles.selectedIm, 'image'))
     remindTxt = 'Please wait while running';
@@ -132,13 +105,23 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     
     % segmentation & show segmented image
     if get(handles.clusterRButton, 'value')
-        blockSize = [50 50]; nOL = 3; tVote = 0.4;
-        imgSeg = kmeansCluster(img,blockSize, nOL,tVote);
+        blockSize = [50 50];
+        nOL = getappdata(handles.figure1, 'nOL');
+        tVote = 0.4;
+        %         imgSeg = kmeansCluster(img,blockSize, nOL,tVote);
+        [ballotBox1,ballotBox2] = vote(img,blockSize,nOL);
+        imgSeg1 = false(size(ballotBox1)); imgSeg2 = imgSeg1;
+        imgSeg1(ballotBox1 >= tVote * nOL^2) = 1;
+        imgSeg2(ballotBox2 >= tVote * nOL^2) = 1;
+        imgSeg = imgSeg1&imgSeg2;
+        setappdata(handles.figure1, 'ballotBox1', ballotBox1);
+        setappdata(handles.figure1, 'ballotBox2', ballotBox2);
     else
         imgSeg = otsuBinarize(img);
     end
     axes(handles.segIm);
     imshow(imgSeg); impixelinfo;
+    setappdata(handles.segIm, 'imgSeg', imgSeg);
     
     % Count using Cell Size Estimation
     [numMin,numMax] = countCell(img, imgSeg);
@@ -191,38 +174,24 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     set(handles.remindStr, 'String', remindTxt);
     
     set(gca,{'xlim','ylim'}, getappdata(handles.figure1, 'original_zoom_level'))
+    set(handles.voteSlider, 'Visible', 'on');
+    set(handles.voteText, 'Visible', 'on');
 end
 
-% --------------------------------------------------------------------
 function FileMenu_Callback(hObject, eventdata, handles)
-% hObject    handle to FileMenu (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 
-% --------------------------------------------------------------------
 function SaveFig_Callback(hObject, eventdata, handles)
-% hObject    handle to SaveFig (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 [fname, pname] = uiputfile('*.fig');
 
 if ~(isequal(fname, 0) || isequal(pname, 0))
     saveas(gcf, fullfile(pname,fname));
 end
 
-% --------------------------------------------------------------------
 function Save_Callback(hObject, eventdata, handles)
-% hObject    handle to Save (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 
-% --------------------------------------------------------------------
 function SaveSegIm_Callback(hObject, eventdata, handles)
-% hObject    handle to SaveSegIm (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 if ~isempty(getappdata(handles.segIm, 'image'))
     [fname, pname] = uiputfile('*.bmp;*.jpg;*.png;*.jpeg;*.tif');
     if ~(isequal(fname, 0) || isequal(pname, 0))
@@ -232,11 +201,7 @@ else
     warndlg('No segmented image found!');
 end
 
-% --------------------------------------------------------------------
 function SaveSelectedIm_Callback(hObject, eventdata, handles)
-% hObject    handle to SaveSelectedIm (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 if ~isempty(getappdata(handles.selectedIm, 'image'))
     [fname, pname] = uiputfile('*.bmp;*.jpg;*.png;*.jpeg;*.tif');
     if ~(isequal(fname, 0) || isequal(pname, 0))
@@ -247,12 +212,7 @@ else
 end
 
 
-% --- Executes on button press in cropButton.
 function cropButton_Callback(hObject, eventdata, handles)
-% hObject    handle to cropButton (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 img = getappdata(handles.selectedIm, 'image');
 img_ori = getappdata(handles.selectedIm, 'oriIm');
 if ~isempty(img)
@@ -322,12 +282,10 @@ switch(evname)
         end
 end
 
-% --------------------------------------------------------------------
+
 function CellCir_ClickedCallback(hObject, eventdata, handles)
-% hObject    handle to ROICir (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 if strcmp(get(hObject,'State'),'on')
+    set(handles.CompareTool, 'State', 'off');
     pan(handles.selectedIm,'off');
     zoom(handles.selectedIm,'off');
     set(handles.figure1, 'Pointer', 'custom', 'PointerShapeCData',...
@@ -335,26 +293,38 @@ if strcmp(get(hObject,'State'),'on')
         'Value')), 'PointerShapeHotSpot', [16,16]);
 end
 
-% --------------------------------------------------------------------
-function CellCir_OffCallback(hObject, eventdata, handles)
-% hObject    handle to ROICir (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
+function CellCir_OffCallback(hObject, eventdata, handles)
 set(handles.figure1, 'Pointer', 'arrow');
 
 % --- Executes on mouse press over axes background.
 function selectedIm_ButtonDownFcn(hObject, eventdata, handles)
-% hObject    handle to selectedIm (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+if strcmp(get(handles.CompareTool, 'State'), 'on')
+    point = get(handles.selectedIm,'CurrentPoint');
+    point = point(1,1:2);
+    imgSeg = getappdata(handles.segIm, 'imgSeg');
+    if isempty(imgSeg)
+        return
+    end
+    axes(handles.segIm);
+    imshow(imgSeg); impixelinfo;
+    viscircles(point, 100, 'Color', 'r');
+end
+
 if ~strcmp(get(handles.CellCir,'State'),'on')
     return;
 end
-point = get(handles.selectedIm,'CurrentPoint');
-point = point(1,1:2);
+
 c = getappdata(handles.selectedIm, 'c');
 r = getappdata(handles.selectedIm, 'r');
+
+if isempty(c) || isempty(r)
+    % No ROI
+    return
+end
+
+point = get(handles.selectedIm,'CurrentPoint');
+point = point(1,1:2);
 if (point(1)-c(1))^2 + (point(2)-c(2))^2 >= r^2
     return;
 end
@@ -377,11 +347,7 @@ setappdata(handles.selectedIm, 'l_rs', rs);
 set(handles.v,'HitTest','off');
 
 
-% --- Executes on button press in drawROIButton.
 function drawButton_Callback(hObject, eventdata, handles)
-% hObject    handle to drawROIButton (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 if ~isempty(getappdata(handles.selectedIm, 'image'))
     remindTxt = "Draw the ROI and Circle the cells using the CIRCLE IN TOOLBAR. Then RUN";
     set(handles.remindStr, 'String', remindTxt);
@@ -392,6 +358,7 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     uiwait(handles.figure1);
     delete(k);
 end
+
 
 function roiDraw(src,evt,varargin)
 handles = varargin{1};
@@ -432,12 +399,6 @@ end
 
 % --- Executes on slider movement.
 function radiusSlider_Callback(hObject, eventdata, handles)
-% hObject    handle to radiusSlider (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'Value') returns position of slider
-%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 slider_value = get(hObject, 'Value');
 set(handles.radiusText, 'String', num2str(slider_value));
 set(handles.figure1, 'Pointer', 'custom', 'PointerShapeCData',...
@@ -450,11 +411,6 @@ end
 
 % --- Executes during object creation, after setting all properties.
 function radiusSlider_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to radiusSlider (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
@@ -466,9 +422,6 @@ set(hObject, 'SliderStep', [1/13 , 1/13]);
 
 % --- Executes on button press in loadImButton.
 function loadImButton_Callback(hObject, eventdata, handles)
-% hObject    handle to loadImButton (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 remindTxt = 'Load an image to start';
 set(handles.remindStr, 'String', remindTxt);
 axes(handles.selectedIm);
@@ -505,6 +458,8 @@ else
     img = imtophat(img_ori, se);
     setappdata(handles.selectedIm, 'image', img);
     
+    %     setappdata(handles.selectedIm, 'image', img_ori);
+    
     setappdata(handles.figure1, 'imgLoaded', true);
     setappdata(handles.figure1, 'original_zoom_level', get(gca,{'xlim','ylim'}));
     
@@ -515,11 +470,6 @@ end
 
 % --- Executes on button press in autoRButton.
 function autoRButton_Callback(hObject, eventdata, handles)
-% hObject    handle to autoRButton (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of autoRButton
 set(handles.drawButton, 'enable', 'off');
 set(handles.radiusSlider, 'enable', 'off');
 remindTxt = 'Choose the METHOD and RUN';
@@ -527,11 +477,6 @@ set(handles.remindStr, 'String', remindTxt);
 
 % --- Executes on button press in semiAutoRButton.
 function semiAutoRButton_Callback(hObject, eventdata, handles)
-% hObject    handle to semiAutoRButton (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of semiAutoRButton
 if getappdata(handles.figure1, 'imgLoaded') == false
     return
 end
@@ -543,24 +488,13 @@ set(handles.remindStr, 'String', remindTxt);
 set(handles.radiusText, 'String', num2str(get(handles.radiusSlider, 'Value')));
 
 
-% --- Executes on button press in AutoDetectionRButton.
 function AutoDetectionRButton_Callback(hObject, eventdata, handles)
-% hObject    handle to AutoDetectionRButton (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of AutoDetectionRButton
 remindTxt = 'Press the CROP IMAGE to get the roi NOW';
 set(handles.remindStr, 'String', remindTxt);
 
 
 % --- Executes on scroll wheel click while the figure is in focus.
 function figure1_WindowScrollWheelFcn(hObject, eventdata, handles)
-% hObject    handle to figure1 (see GCBO)
-% eventdata  structure with the following fields (see MATLAB.UI.FIGURE)
-%	VerticalScrollCount: signed integer indicating direction and number of clicks
-%	VerticalScrollAmount: number of lines scrolled for each click
-% handles    structure with handles and user data (see GUIDATA)
 if ~strcmp(get(handles.radiusSlider, 'enable'), 'on')
     return
 end
@@ -623,6 +557,42 @@ if strcmp(get(handles.CellCir,'State'),'on')
 end
 
 
-function figure1_KeyPressFcn(hObject, eventdata, handles)
+function voteSlider_Callback(hObject, eventdata, handles)
+votes = get(hObject, 'Value');
+set(handles.voteText, 'String', num2str(votes));
+ballotBox1 = getappdata(handles.figure1, 'ballotBox1');
+ballotBox2 = getappdata(handles.figure1, 'ballotBox2');
+imgSeg1 = false(size(ballotBox1)); imgSeg2 = imgSeg1;
+imgSeg1(ballotBox1 >= votes) = 1;
+imgSeg2(ballotBox2 >= votes) = 1;
+imgSeg = imgSeg1 & imgSeg2;
+imgSeg = imerode(imgSeg, strel('disk',1));
+axes(handles.segIm);
+imshow(imgSeg); impixelinfo;
 
-function figure1_KeyReleaseFcn(hObject, eventdata, handles)
+function voteSlider_CreateFcn(hObject, eventdata, handles)
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+set(hObject, 'Min', 1);
+set(hObject, 'Max', 9);
+set(hObject, 'Value', 4);
+set(hObject, 'SliderStep', [1/8 , 1/8]);
+set(hObject, 'Visible', 'off');
+
+
+function voteText_CreateFcn(hObject, eventdata, handles)
+set(hObject, 'Visible', 'off');
+
+
+function CompareTool_OnCallback(hObject, eventdata, handles)
+set(handles.CellCir, 'State', 'off');
+
+
+function CompareTool_OffCallback(hObject, eventdata, handles)
+imgSeg = getappdata(handles.segIm, 'imgSeg');
+if ~isempty(imgSeg)
+    axes(handles.segIm);
+    imshow(imgSeg); impixelinfo;
+end
