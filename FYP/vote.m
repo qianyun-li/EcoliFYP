@@ -93,12 +93,12 @@ function [aTh, vTh] = autothresh(img, xStep, yStep, xEnd, yEnd, blockSize)
     i = find(tf);
     min1 = x1(i(1));
     
-%     [num1, vLoc] = findpeaks(f1,x1);
-%     [~, index1] = min(num1);
-%     max1 = vLoc(index1);
+    [num1, vLoc] = findpeaks(f1,x1);
+    [~, index1] = max(num1);
+    max1 = vLoc(index1);
    
-    vTh = min1 * 1.20;
-%     vTh = (min1+max1)* 0.5;
+%     vTh = min1 * 1.20;
+    vTh = (min1+max1)* 0.44;
     
     aStep = 5;
     x2 = 0:aStep:ceil(max(avg));
