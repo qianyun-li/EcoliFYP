@@ -10,14 +10,10 @@ function img = preprocess(img)
     img = roifilt2(img,mask,@(x) imadjust(x,stretchlim(x)));
 
 %     img = medfilt2(img);
-    img = imgaussfilt(img,0.8);
+    img = imgaussfilt(img,0.75);
     
 %     img = adapthisteq(img);
-    img = imadjust(img,[0.1 0.75]);
-    
-    se = strel('disk',90);
-    img1 = imtophat(img, se);
-    img2 = imbothat(img, se);
+    img = imadjust(img);
     
     SE = strel('disk',7);
     img = imopen(img,SE);

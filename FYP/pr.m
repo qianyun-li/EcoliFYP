@@ -51,6 +51,7 @@ function pr_OpeningFcn(hObject, ~, handles, varargin)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to pr (see VARARGIN)
+movegui('center');
 
 set(handles.selectedIm, 'visible', 'off');
 set(handles.segIm, 'visible', 'off');
@@ -275,7 +276,7 @@ if ~isempty(img)
         remindTxt = 'Adjust the ROI (or not) and DOUBLE CLICK to crop';
         set(handles.remindStr, 'String', remindTxt);
     end
-
+    
     l = addlistener(roi,'ROIClicked', @(src,evt)roiSelect(src,evt,handles));
     uiwait(handles.figure1);
     delete(l);
@@ -347,33 +348,33 @@ function selectedIm_ButtonDownFcn(hObject, eventdata, handles)
 % hObject    handle to selectedIm (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-    if ~strcmp(get(handles.CellCir,'State'),'on')
-        return;
-    end
-    point = get(handles.selectedIm,'CurrentPoint');
-    point = point(1,1:2);
-    c = getappdata(handles.selectedIm, 'c');
-    r = getappdata(handles.selectedIm, 'r');
-    if (point(1)-c(1))^2 + (point(2)-c(2))^2 >= r^2
-        return;
-    end
-    cs = getappdata(handles.selectedIm, 'l_cs');
-    rs = getappdata(handles.selectedIm, 'l_rs');
-    cs = [cs; point];
+if ~strcmp(get(handles.CellCir,'State'),'on')
+    return;
+end
+point = get(handles.selectedIm,'CurrentPoint');
+point = point(1,1:2);
+c = getappdata(handles.selectedIm, 'c');
+r = getappdata(handles.selectedIm, 'r');
+if (point(1)-c(1))^2 + (point(2)-c(2))^2 >= r^2
+    return;
+end
+cs = getappdata(handles.selectedIm, 'l_cs');
+rs = getappdata(handles.selectedIm, 'l_rs');
+cs = [cs; point];
 
-    w = ceil(getpixelposition(handles.selectedIm));
-    w = w(3);
-    x = handles.selectedIm.XLim(2)-handles.selectedIm.XLim(1);
-    r_pointer = get(handles.radiusSlider, 'Value');
-    r_new = r_pointer * x / w;
+w = ceil(getpixelposition(handles.selectedIm));
+w = w(3);
+x = handles.selectedIm.XLim(2)-handles.selectedIm.XLim(1);
+r_pointer = get(handles.radiusSlider, 'Value');
+r_new = r_pointer * x / w;
 
-    rs = [rs r_new];
-    handles.v = viscircles(cs, rs, 'Color', 'b');
-    set(handles.image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn,handles});
-    set(handles.v,'PickableParts','none');
-    setappdata(handles.selectedIm, 'l_cs', cs);
-    setappdata(handles.selectedIm, 'l_rs', rs);
-    set(handles.v,'HitTest','off');
+rs = [rs r_new];
+handles.v = viscircles(cs, rs, 'Color', 'b');
+set(handles.image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn,handles});
+set(handles.v,'PickableParts','none');
+setappdata(handles.selectedIm, 'l_cs', cs);
+setappdata(handles.selectedIm, 'l_rs', rs);
+set(handles.v,'HitTest','off');
 
 
 % --- Executes on button press in drawROIButton.
@@ -440,8 +441,8 @@ function radiusSlider_Callback(hObject, eventdata, handles)
 slider_value = get(hObject, 'Value');
 set(handles.radiusText, 'String', num2str(slider_value));
 set(handles.figure1, 'Pointer', 'custom', 'PointerShapeCData',...
-        generate_pointer([16,16], get(handles.radiusSlider,...
-        'Value')), 'PointerShapeHotSpot', [16,16]);
+    generate_pointer([16,16], get(handles.radiusSlider,...
+    'Value')), 'PointerShapeHotSpot', [16,16]);
 if strcmp(get(handles.CellCir,'State'),'off')
     set(handles.CellCir,'State','on')
 end
@@ -541,23 +542,6 @@ remindTxt = 'Operate the LABEL MANUALLY section';
 set(handles.remindStr, 'String', remindTxt);
 set(handles.radiusText, 'String', num2str(get(handles.radiusSlider, 'Value')));
 
-% --- Executes on button press in clusterRButton.
-function clusterRButton_Callback(hObject, eventdata, handles)
-% hObject    handle to clusterRButton (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of clusterRButton
-
-
-% --- Executes on button press in threshRButton.
-function threshRButton_Callback(hObject, eventdata, handles)
-% hObject    handle to threshRButton (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of threshRButton
-
 
 % --- Executes on button press in AutoDetectionRButton.
 function AutoDetectionRButton_Callback(hObject, eventdata, handles)
@@ -587,14 +571,14 @@ switch(eventdata.VerticalScrollCount)
     case -1
         % Mouse wheel roll up
         if value < get(handles.radiusSlider, 'Max')
-           set(handles.radiusSlider, 'Value', value + 1); 
-           set(handles.radiusText, 'String', num2str(value+1));
+            set(handles.radiusSlider, 'Value', value + 1);
+            set(handles.radiusText, 'String', num2str(value+1));
         end
     case 1
         % Mouse wheel roll down
         if value > get(handles.radiusSlider, 'Min')
-           set(handles.radiusSlider, 'Value', value - 1);
-           set(handles.radiusText, 'String', num2str(value-1));
+            set(handles.radiusSlider, 'Value', value - 1);
+            set(handles.radiusText, 'String', num2str(value-1));
         end
 end
 
@@ -622,13 +606,13 @@ value = get(handles.radiusSlider, 'Value');
 switch(eventdata.Key)
     case 'q'
         if value < get(handles.radiusSlider, 'Max')
-           set(handles.radiusSlider, 'Value', value + 1); 
-           set(handles.radiusText, 'String', num2str(value+1));
+            set(handles.radiusSlider, 'Value', value + 1);
+            set(handles.radiusText, 'String', num2str(value+1));
         end
     case 'e'
         if value > get(handles.radiusSlider, 'Min')
-           set(handles.radiusSlider, 'Value', value - 1);
-           set(handles.radiusText, 'String', num2str(value-1));
+            set(handles.radiusSlider, 'Value', value - 1);
+            set(handles.radiusText, 'String', num2str(value-1));
         end
 end
 
@@ -637,3 +621,8 @@ if strcmp(get(handles.CellCir,'State'),'on')
         generate_pointer([16,16], get(handles.radiusSlider,...
         'Value')), 'PointerShapeHotSpot', [16,16]);
 end
+
+
+function figure1_KeyPressFcn(hObject, eventdata, handles)
+
+function figure1_KeyReleaseFcn(hObject, eventdata, handles)
