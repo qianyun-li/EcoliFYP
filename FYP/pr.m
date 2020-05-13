@@ -134,7 +134,7 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
         blockSize = [50 50]; nOL = 3; tVote = 0.4;
         imgSeg = kmeansCluster(img,blockSize, nOL,tVote);
     else
-        imgSeg = ostuBinarize(img);
+        imgSeg = otsuBinarize(img);
     end
     axes(handles.segIm);
     imshow(imgSeg); impixelinfo;
@@ -261,6 +261,8 @@ if ~isempty(img)
         roi = drawcircle();
         setappdata(handles.selectedIm, 'radius', []);
         setappdata(handles.selectedIm, 'center', []);
+        remindTxt = 'select the ROI and DOUBLE CLICK to crop';
+        set(handles.remindStr, 'String', remindTxt);
     else
         % Auto Detection radio button selected
         [center, radius, rect] = dishSeg(img);
@@ -268,8 +270,10 @@ if ~isempty(img)
         img_ori = imcrop(img_ori, rect);
         setappdata(handles.selectedIm, 'image', img);
         setappdata(handles.selectedIm, 'oriIm', img_ori);
-        axes(handles.selectedIm); imshow(img);
+        axes(handles.selectedIm); imshow(img_ori);
         roi = drawcircle('Center', center, 'Radius', radius);
+        remindTxt = 'Adjust the ROI (or not) and DOUBLE CLICK to crop';
+        set(handles.remindStr, 'String', remindTxt);
     end
 
     l = addlistener(roi,'ROIClicked', @(src,evt)roiSelect(src,evt,handles));
@@ -284,6 +288,8 @@ if ~isempty(img)
     %             set(handles.result2Str, 'String', []);
     
     set(handles.cropButton, 'enable', 'off');
+    remindTxt = 'Choose the DEGREE';
+    set(handles.remindStr, 'String', remindTxt);
 end
 
 function roiSelect(src,evt,varargin)
@@ -376,7 +382,7 @@ function drawButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 if ~isempty(getappdata(handles.selectedIm, 'image'))
-    remindTxt = "Draw the ROI and Circle the cells using the CIRCLE IN TOOLBAR";
+    remindTxt = "Draw the ROI and Circle the cells using the CIRCLE IN TOOLBAR. Then RUN";
     set(handles.remindStr, 'String', remindTxt);
     roi = drawcircle();
     setappdata(handles.selectedIm, 'r', []);
@@ -462,6 +468,8 @@ function loadImButton_Callback(hObject, eventdata, handles)
 % hObject    handle to loadImButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+remindTxt = 'Load an image to start';
+set(handles.remindStr, 'String', remindTxt);
 axes(handles.selectedIm);
 [fname,pname] = uigetfile({'*.bmp;*.jpg;*.png;*.jpeg;*.tif'},...
     'Pick an image', '/image/');
@@ -469,6 +477,9 @@ str = [pname fname];
 if isequal(fname, 0) || isequal(pname, 0)
     return;
 else
+    remindTxt = 'Loading the image';
+    set(handles.remindStr, 'String', remindTxt);
+    
     img_ori = rgb2gray(imread(str));
     setappdata(handles.selectedIm, 'oriIm', img_ori);
     setappdata(handles.selectedIm, 'cs', 0);
@@ -481,8 +492,6 @@ else
     set(handles.result1Str, 'String', []);
     set(handles.result2Str, 'String', []);
     set(handles.cropButton, 'enable', 'on');
-    remindTxt = 'Press the CROP IMAGE Button NOW to get the ROI';
-    set(handles.remindStr, 'String', remindTxt);
     
     % Resize image width to 3120
     img_ori = imresize(img_ori, 3120 / size(img_ori,2));
@@ -497,6 +506,9 @@ else
     
     setappdata(handles.figure1, 'imgLoaded', true);
     setappdata(handles.figure1, 'original_zoom_level', get(gca,{'xlim','ylim'}));
+    
+    remindTxt = 'Press the CROP IMAGE Button NOW to get the ROI';
+    set(handles.remindStr, 'String', remindTxt);
 end
 
 

@@ -1,4 +1,4 @@
-function [center,radius, rect] = diskSeg1(img)
+function [center,radius, rect] = dishSeg(img)
     img_s = imresize(img, 0.1);
     [sx, sy] = SobelEdgeOperator(img_s);
     mag =  sqrt(sx.^2 + sy.^2);
