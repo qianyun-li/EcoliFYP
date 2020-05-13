@@ -295,7 +295,7 @@ end
 
 function roiSelect(src,evt,varargin)
 handles = varargin{1};
-img = getimage(handles.selectedIm);
+img = getappdata(handles.selectedIm, 'image');
 img_ori = getappdata(handles.selectedIm, 'oriIm');
 center = getappdata(handles.selectedIm, 'center');
 radius = getappdata(handles.selectedIm, 'radius');
