@@ -250,6 +250,15 @@ if ~isempty(img)
     set(handles.cropButton, 'enable', 'off');
     remindTxt = 'Choose the DEGREE';
     set(handles.remindStr, 'String', remindTxt);
+    
+%     p1 = get(handles.selectedIm, 'Position');
+%     p2 = get(handles.remindStr, 'Position');
+%     p3 = get(handles.selectedText, 'Position');
+%     p4 = get(handles.segmentedText, 'Position');
+%     p3(2) = 1/2*(p1(2)+p2(2)-p1(4))-p3(4);
+%     p4(2) = p3(2);
+%     set(handles.selectedText, 'Position', p3);
+%     set(handles.segmentedText, 'Position', p4);
 end
 
 function roiSelect(src,evt,varargin)
@@ -315,7 +324,7 @@ if strcmp(get(handles.CompareTool, 'State'), 'on')
     axes(handles.segIm);
     image2 = imshow(imgSeg, 'Parent', handles.segIm); impixelinfo;
     set(image2,'ButtonDownFcn',{@segIm_ButtonDownFcn, handles});
-    viscircles(point, 100, 'Color', 'r');
+    viscircles(point, (handles.selectedIm.XLim(2)-handles.selectedIm.XLim(1))/22, 'Color', 'r');
 end
 
 if ~strcmp(get(handles.CellCir,'State'),'on')
@@ -629,7 +638,7 @@ if strcmp(get(handles.CompareTool, 'State'), 'on')
     axes(handles.selectedIm);
     image1 = imshow(img, 'Parent', handles.selectedIm); impixelinfo;
     set(image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn, handles});
-    viscircles(point, 100, 'Color', 'r');
+    viscircles(point, (handles.selectedIm.XLim(2)-handles.selectedIm.XLim(1))/22, 'Color', 'r');
     radius = getappdata(handles.figure1, 'radius');
     viscircles(size(img)/2, radius, 'Color', 'b');
 end
