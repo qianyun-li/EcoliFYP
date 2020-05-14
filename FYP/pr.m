@@ -22,7 +22,7 @@ function varargout = pr(varargin)
 
 % Edit the above text to modify the response to help pr
 
-% Last Modified by GUIDE v2.5 14-May-2020 05:23:58
+% Last Modified by GUIDE v2.5 14-May-2020 18:23:10
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -119,9 +119,6 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     else
         imgSeg = otsuBinarize(img);
     end
-    axes(handles.segIm);
-    imshow(imgSeg); impixelinfo;
-    setappdata(handles.segIm, 'imgSeg', imgSeg);
     
     % Count using Cell Size Estimation
     [numMin,numMax] = countCell(img, imgSeg);
@@ -155,7 +152,9 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     
     % Display the results
     axes(handles.segIm);
-    imshow(imgSeg); impixelinfo;
+    image2 = imshow(imgSeg, 'Parent', handles.segIm); impixelinfo;
+    setappdata(handles.segIm, 'imgSeg', imgSeg);
+    set(image2,'ButtonDownFcn',{@segIm_ButtonDownFcn, handles});
     set(handles.result1Str, 'String', str1);
     
     %     if(get(handles.CirCheck, 'Value'))
@@ -271,6 +270,7 @@ switch(evname)
             img = imcrop(img, rect);
             img_ori = imcrop(img_ori, rect);
             setappdata(handles.selectedIm, 'image', img);
+            setappdata(handles.selectedIm, 'oriIm', img_ori);
             uiresume(handles.figure1);
             axes(handles.selectedIm);
             handles.image1 = imshow(img_ori,'Parent',handles.selectedIm);impixelinfo;
@@ -300,6 +300,9 @@ set(handles.figure1, 'Pointer', 'arrow');
 % --- Executes on mouse press over axes background.
 function selectedIm_ButtonDownFcn(hObject, eventdata, handles)
 if strcmp(get(handles.CompareTool, 'State'), 'on')
+    img = getappdata(handles.selectedIm, 'oriIm');
+    image1 = imshow(img, 'Parent', handles.selectedIm); impixelinfo;
+    set(image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn, handles});
     point = get(handles.selectedIm,'CurrentPoint');
     point = point(1,1:2);
     imgSeg = getappdata(handles.segIm, 'imgSeg');
@@ -307,7 +310,8 @@ if strcmp(get(handles.CompareTool, 'State'), 'on')
         return
     end
     axes(handles.segIm);
-    imshow(imgSeg); impixelinfo;
+    image2 = imshow(imgSeg, 'Parent', handles.segIm); impixelinfo;
+    set(image2,'ButtonDownFcn',{@segIm_ButtonDownFcn, handles});
     viscircles(point, 100, 'Color', 'r');
 end
 
@@ -563,9 +567,11 @@ imgSeg1 = false(size(ballotBox1)); imgSeg2 = imgSeg1;
 imgSeg1(ballotBox1 >= votes) = 1;
 imgSeg2(ballotBox2 >= votes) = 1;
 imgSeg = imgSeg1 & imgSeg2;
-imgSeg = imerode(imgSeg, strel('disk',1));
+% imgSeg = imerode(imgSeg, strel('disk',1));
 axes(handles.segIm);
-imshow(imgSeg); impixelinfo;
+image2 = imshow(imgSeg, 'Parent', handles.segIm); impixelinfo;
+set(image2,'ButtonDownFcn',{@segIm_ButtonDownFcn, handles});
+setappdata(handles.segIm, 'imgSeg', imgSeg);
 
 function voteSlider_CreateFcn(hObject, eventdata, handles)
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
@@ -591,5 +597,31 @@ function CompareTool_OffCallback(hObject, eventdata, handles)
 imgSeg = getappdata(handles.segIm, 'imgSeg');
 if ~isempty(imgSeg)
     axes(handles.segIm);
-    imshow(imgSeg); impixelinfo;
+    image2 = imshow(imgSeg, 'Parent', handles.segIm); impixelinfo;
+    set(image2,'ButtonDownFcn',{@segIm_ButtonDownFcn, handles});
+end
+
+img = getappdata(handles.selectedIm, 'oriIm');
+if ~isempty(img)
+    axes(handles.selectedIm);
+    image1 = imshow(img, 'Parent', handles.selectedIm); impixelinfo;
+    set(image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn, handles});
+end
+
+
+function segIm_ButtonDownFcn(hObject, ~, handles)
+if strcmp(get(handles.CompareTool, 'State'), 'on')
+    imgSeg = getappdata(handles.segIm, 'imgSeg');
+    image2 = imshow(imgSeg, 'Parent', handles.segIm); impixelinfo;
+    set(image2,'ButtonDownFcn',{@segIm_ButtonDownFcn, handles});
+    point = get(handles.segIm,'CurrentPoint');
+    point = point(1,1:2);
+    img = getappdata(handles.selectedIm, 'oriIm');
+    if isempty(img)
+        return
+    end
+    axes(handles.selectedIm);
+    image1 = imshow(img, 'Parent', handles.selectedIm); impixelinfo;
+    set(image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn, handles});
+    viscircles(point, 100, 'Color', 'r');
 end
