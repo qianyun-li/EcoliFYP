@@ -265,17 +265,18 @@ switch(evname)
         if isequal(center,src.Center) && isequal(radius,src.Radius)
             mask = createMask(src);
             img(~mask) = 0;
-            img_ori(~mask) = 0;
             rect = [src.Center(1)-src.Radius, src.Center(2)-src.Radius, src.Radius*2, src.Radius*2];
             img = imcrop(img, rect);
             img_ori = imcrop(img_ori, rect);
             setappdata(handles.selectedIm, 'image', img);
             setappdata(handles.selectedIm, 'oriIm', img_ori);
-            uiresume(handles.figure1);
             axes(handles.selectedIm);
-            handles.image1 = imshow(img_ori,'Parent',handles.selectedIm);impixelinfo;
-            set(handles.image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn,handles});
+            image1 = imshow(img_ori,'Parent',handles.selectedIm);impixelinfo;
+            viscircles(size(img_ori)/2, radius, 'Color', 'b');
+            uiresume(handles.figure1);
+            set(image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn,handles});
             setappdata(handles.figure1, 'original_zoom_level', get(gca,{'xlim','ylim'}));
+            setappdata(handles.figure1, 'radius', radius);
         else
             setappdata(handles.selectedIm, 'center', src.Center);
             setappdata(handles.selectedIm, 'radius', src.Radius);
@@ -309,6 +310,8 @@ if strcmp(get(handles.CompareTool, 'State'), 'on')
     if isempty(imgSeg)
         return
     end
+    radius = getappdata(handles.figure1, 'radius');
+    viscircles(size(img)/2, radius, 'Color', 'b');
     axes(handles.segIm);
     image2 = imshow(imgSeg, 'Parent', handles.segIm); impixelinfo;
     set(image2,'ButtonDownFcn',{@segIm_ButtonDownFcn, handles});
@@ -606,6 +609,8 @@ if ~isempty(img)
     axes(handles.selectedIm);
     image1 = imshow(img, 'Parent', handles.selectedIm); impixelinfo;
     set(image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn, handles});
+    radius = getappdata(handles.figure1, 'radius');
+    viscircles(size(img)/2, radius, 'Color', 'b');
 end
 
 
@@ -624,4 +629,6 @@ if strcmp(get(handles.CompareTool, 'State'), 'on')
     image1 = imshow(img, 'Parent', handles.selectedIm); impixelinfo;
     set(image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn, handles});
     viscircles(point, 100, 'Color', 'r');
+    radius = getappdata(handles.figure1, 'radius');
+    viscircles(size(img)/2, radius, 'Color', 'b');
 end
