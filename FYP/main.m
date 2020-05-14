@@ -12,14 +12,14 @@ radius = [];
 % figure, imshowpair(img, img_con, 'montage');
 % toc
 
-% imgOri = imread('image/E.Coli-1.jpg');
+imgOri = imread('image/E.Coli-1.jpg');
 % imgOri = imread('image/E.Coli-2.jpg');
-% imgOri = imread('image/E.Coli+PtCo-1.jpg'); %np
+% imgOri = imread('image/E.Coli+PtCo-1.jpg'); % 1 loc min
 % imgOri = imread('image/E.Coli+PtCo-2.jpg'); 
-% imgOri = imread('image/LB-1.jpg');
+% imgOri = imread('image/LB-1.jpg'); % 1 loc min
 % imgOri = imread('image/LB-2.jpg'); 
-% imgOri = imread('image/LB+PtCo-1.jpg');
-imgOri = imread('image/LB+PtCo-2.jpg');
+% imgOri = imread('image/LB+PtCo-1.jpg'); % np
+% imgOri = imread('image/LB+PtCo-2.jpg'); % np
 
 img = rgb2gray(imgOri);
 figure("Name","Original Image"),imshow(img); impixelinfo;

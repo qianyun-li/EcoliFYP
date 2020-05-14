@@ -86,39 +86,42 @@ function [aTh, vTh] = autothresh(img, xStep, yStep, xEnd, yEnd, blockSize)
         end
     end
     
+    
     vStep = 100;
     x1 = 0:vStep:ceil(max(v));
     [f1, ~] = ksdensity(v, x1);
-    tf = islocalmin(f1);
-    i = find(tf);
-    min1 = x1(i(1));
+%     tf = islocalmin(f1);
+%     i = find(tf);
+%     min1 = x1(i(1));
     
-    [num1, vLoc] = findpeaks(f1,x1);
+    startIdx1 = 2;
+    [num1, vLoc] = findpeaks(f1(startIdx1:end),x1(startIdx1:end));
     [~, index1] = max(num1);
     max1 = vLoc(index1);
    
-%     vTh = min1 * 1.20;
-    vTh = (min1+max1)* 0.44;
+    vTh = max1;
+% %     vTh = min1 * 1.20;
+%     vTh = (min1+max1)* 0.44;
     
     aStep = 5;
     x2 = 0:aStep:ceil(max(avg));
     [f2, ~] = ksdensity(avg, x2);
     
-    startIdx = 4;
-    [num2, aLoc] = findpeaks(f2(startIdx:end), x2(startIdx:end));
+    startIdx2 = 4;
+    [num2, aLoc] = findpeaks(f2(startIdx2:end), x2(startIdx2:end));
     [~, index2] = max(num2);
     max2 = aLoc(index2);
     
-    tf = islocalmin(f2);
-    i = find(tf > 0);
+    tf_f = islocalmin(f2);
+    i_f = find(tf_f > 0);
     
     if(size(i,2) == 1) 
-        min2 = x2(i(1));
+        diff1 = [0 diff(f2)];
+        tf_diff = islocalmin(diff1);
+        i_diff = find(tf_diff > 0);
+        min2 = x2(i_diff(2)) + aStep;
     else
-%         diff1 = [0 diff(f2)];
-%         i = find(diff1 > 0);
-%         min2 = x2(i(1));
-        min2 = x2(i(2));
+        min2 = x2(i_f(2));
     end
     
     aTh = (min2 + max2) * 0.43;

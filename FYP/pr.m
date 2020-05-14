@@ -431,9 +431,6 @@ str = [pname fname];
 if isequal(fname, 0) || isequal(pname, 0)
     return;
 else
-    remindTxt = 'Loading the image';
-    set(handles.remindStr, 'String', remindTxt);
-    
     img_ori = rgb2gray(imread(str));
     setappdata(handles.selectedIm, 'oriIm', img_ori);
     setappdata(handles.selectedIm, 'cs', 0);
