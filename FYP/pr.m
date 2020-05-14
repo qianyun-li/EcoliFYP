@@ -347,7 +347,6 @@ r_new = r_pointer * x / w;
 
 rs = [rs r_new];
 handles.v = viscircles(cs, rs, 'Color', 'b');
-set(handles.image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn,handles});
 set(handles.v,'PickableParts','none');
 setappdata(handles.selectedIm, 'l_cs', cs);
 setappdata(handles.selectedIm, 'l_rs', rs);
@@ -389,11 +388,13 @@ switch(evname)
             zoom_level = get(gca,{'xlim','ylim'});
             
             uiresume(handles.figure1);
-            handles.image1 = imshow(img, 'Parent', handles.selectedIm);
-            handles.h = viscircles(center, radius);
-            set(handles.image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn,handles});
-            set(handles.h,'PickableParts','none');
-            set(handles.h,'HitTest','off');
+            image1 = imshow(img, 'Parent', handles.selectedIm);
+            h = viscircles(center, radius);
+            set(image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn,handles});
+            set(h,'PickableParts','none');
+            set(h,'HitTest','off');
+            radius = getappdata(handles.figure1, 'radius');
+            viscircles(size(img)/2, radius, 'Color', 'b');
             
             % Return to the previous zoom level
             set(gca,{'xlim','ylim'}, zoom_level)
