@@ -111,7 +111,7 @@ img_mod = imimposemin(img_c, ~bw | mask_em);
 L = watershed(img_mod);
 bw2 = bw;
 bw2(L==0) = 0;
-% figure, imshow(bw2);
+figure, imshow(bw2);
 % % figure, imshow(label2rgb(L));
 % x = unique(L);
 % N = numel(x);
