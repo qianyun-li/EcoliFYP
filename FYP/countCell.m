@@ -19,6 +19,7 @@ function [numCellsMin,numCellsMax]  = countCell(bw)
 
     x = unique(L);
     N = numel(x);
+    count = zeros(1,N);
     for k = 3:N
         count(k) = sum(L==x(k),'all');
     end

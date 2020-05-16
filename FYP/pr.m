@@ -154,7 +154,8 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     set(image2,'ButtonDownFcn',{@segIm_ButtonDownFcn, handles});
     
     % Count using Cell Size Estimation
-    set(handles.remindStr, 'String', 'Counting...'); drawnow;
+    set(handles.remindStr, 'String', 'Counting...'); 
+    set(handles.result1Str, 'String', '...'); drawnow;
     [numMin,numMax] = countCell(imgSeg);
     str1 = [num2str(round(numMin)), ' to ',  num2str(round(numMax))];
     
@@ -653,7 +654,8 @@ end
 
 
 function recountButton_Callback(hObject, eventdata, handles)
-set(handles.remindStr, 'String', 'Counting...'); drawnow;
+set(handles.remindStr, 'String', 'Counting...'); 
+set(handles.result1Str, 'String', '...'); drawnow;
 [numMin,numMax] = countCell(getimage(handles.segIm));
 set(handles.remindStr, 'String', 'Finished');
 set(handles.result1Str, 'String', [num2str(round(numMin)), ' to ',  num2str(round(numMax))]);
