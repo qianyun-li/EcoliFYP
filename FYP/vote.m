@@ -1,4 +1,4 @@
-function [ballotBox1, ballotBox2] = vote(img,blockSize,nOL)
+function [ballotBox1, ballotBox2] = vote(img,blockSize,nOL,autoThresh)
 mask = ~(img == 0);
 xStep = round(blockSize(1)/nOL);
 yStep = round(blockSize(2)/nOL);
@@ -16,9 +16,12 @@ ballotBox2 = ballotBox1;
 xEnd = m-mod(m,blockSize(1))+1+2*blockSize(1);
 yEnd = n-mod(n,blockSize(2))+1+2*blockSize(2);
 nSeg1 = 3;  nSeg2 = 4;
-%     vTh = 1500; aTh = 80;
 
-[aTh,vTh] = autothresh(img, xStep, yStep, xEnd, yEnd, blockSize);
+if autoThresh == 0
+    vTh = 1500; aTh = 80;
+else
+    [aTh,vTh] = autothresh(img, xStep, yStep, xEnd, yEnd, blockSize);
+end
 
 wb = waitbar(0,'Voting...');
 for i = 1 : xStep : xEnd

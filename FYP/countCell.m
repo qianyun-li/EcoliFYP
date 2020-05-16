@@ -1,4 +1,4 @@
-function [numCellsMin,numCellsMax]  = countCell(img, bw)
+function [numCellsMin,numCellsMax]  = countCell(bw)
     allCells = sum(bw(:) == 1);
     
     D = bwdist(~bw);

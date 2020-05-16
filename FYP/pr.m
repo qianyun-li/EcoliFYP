@@ -22,7 +22,7 @@ function varargout = pr(varargin)
 
 % Edit the above text to modify the response to help pr
 
-% Last Modified by GUIDE v2.5 14-May-2020 18:23:10
+% Last Modified by GUIDE v2.5 17-May-2020 01:04:14
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -96,6 +96,7 @@ function runButton_Callback(hObject, ~, handles)
 if ~isempty(getappdata(handles.selectedIm, 'image'))
     remindTxt = 'Please wait while running';
     set(handles.remindStr, 'String', remindTxt);
+    setappdata(handles.figure1, 'useKMeans', false);
     
     % get the image
     img = getappdata(handles.selectedIm, 'image');
@@ -107,22 +108,23 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     if get(handles.clusterRButton, 'value')
         blockSize = [50 50];
         nOL = getappdata(handles.figure1, 'nOL');
-        tVote = 0.4;
+        votes = 4;
         %         imgSeg = kmeansCluster(img,blockSize, nOL,tVote);
-        [ballotBox1,ballotBox2] = vote(img,blockSize,nOL);
+        [ballotBox1,ballotBox2] = vote(img,blockSize,nOL,get(handles.autoThreshCheckbox,'Value'));
         imgSeg1 = false(size(ballotBox1)); imgSeg2 = imgSeg1;
-        imgSeg1(ballotBox1 >= tVote * nOL^2) = 1;
-        imgSeg2(ballotBox2 >= tVote * nOL^2) = 1;
+        imgSeg1(ballotBox1 >= votes) = 1;
+        imgSeg2(ballotBox2 >= votes) = 1;
         imgSeg = imgSeg1&imgSeg2;
         setappdata(handles.figure1, 'ballotBox1', ballotBox1);
         setappdata(handles.figure1, 'ballotBox2', ballotBox2);
+        setappdata(handles.figure1, 'useKMeans', true);
     else
         imgSeg = otsuBinarize(img);
     end
     
     % Count using Cell Size Estimation
-    [numMin,numMax] = countCell(img, imgSeg);
-    str1 = ['Cell Size Estimation: ', num2str(round(numMin)), ' to ',  num2str(round(numMax))];
+    [numMin,numMax] = countCell(imgSeg);
+    str1 = [num2str(round(numMin)), ' to ',  num2str(round(numMax))];
     
     %     % Count using Circle Labeling
     %     if(get(handles.CirCheck, 'Value'))
@@ -157,10 +159,6 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     set(image2,'ButtonDownFcn',{@segIm_ButtonDownFcn, handles});
     set(handles.result1Str, 'String', str1);
     
-    %     if(get(handles.CirCheck, 'Value'))
-    %         set(handles.result2Str, 'String', str2);
-    %     end
-    
     %     axes(handles.selectedIm);
     % %         imshow(img); impixelinfo;
     %         [cs, rs] = imfindcircles(img, [2,25], 'Sensitivity', 0.83);
@@ -173,9 +171,18 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     set(handles.remindStr, 'String', remindTxt);
     
     set(gca,{'xlim','ylim'}, getappdata(handles.figure1, 'original_zoom_level'))
-    set(handles.voteSlider, 'Visible', 'on');
-    set(handles.voteText, 'Visible', 'on');
+    if getappdata(handles.figure1, 'useKMeans')
+        status = 'on';
+    else
+        status = 'off';
+    end
+    set(handles.voteSlider, 'Visible', status);
+    set(handles.voteSlider, 'Value', votes);
+    set(handles.voteText, 'Visible', status);
+    set(handles.voteText, 'String', ['Minimum Required Votes = ' num2str(votes)]);
+    set(handles.recountButton, 'Visible', 'off');
 end
+
 
 function FileMenu_Callback(hObject, eventdata, handles)
 
@@ -245,7 +252,6 @@ if ~isempty(img)
     setappdata(handles.selectedIm, 'l_rs', []);
     set(get(handles.segIm, 'children'), 'visible', 'off');
     set(handles.result1Str, 'String', []);
-    %             set(handles.result2Str, 'String', []);
     
     set(handles.cropButton, 'enable', 'off');
     remindTxt = 'Choose the DEGREE';
@@ -315,6 +321,7 @@ if strcmp(get(handles.CompareTool, 'State'), 'on')
     set(image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn, handles});
     point = get(handles.selectedIm,'CurrentPoint');
     point = point(1,1:2);
+    setappdata(handles.figure1, 'comparingCircleCenter', point);
     imgSeg = getappdata(handles.segIm, 'imgSeg');
     if isempty(imgSeg)
         return
@@ -323,13 +330,17 @@ if strcmp(get(handles.CompareTool, 'State'), 'on')
     viscircles(size(img)/2, radius, 'Color', 'b');
     axes(handles.segIm);
     image2 = imshow(imgSeg, 'Parent', handles.segIm); impixelinfo;
+    viscircles(point, (handles.segIm.XLim(2)-handles.segIm.XLim(1))/22, 'Color', 'r');
     set(image2,'ButtonDownFcn',{@segIm_ButtonDownFcn, handles});
+    axes(handles.selectedIm);
     viscircles(point, (handles.selectedIm.XLim(2)-handles.selectedIm.XLim(1))/22, 'Color', 'r');
 end
 
 if ~strcmp(get(handles.CellCir,'State'),'on')
     return;
 end
+
+% Start Labelling
 
 c = getappdata(handles.selectedIm, 'c');
 r = getappdata(handles.selectedIm, 'r');
@@ -417,7 +428,7 @@ end
 % --- Executes on slider movement.
 function radiusSlider_Callback(hObject, eventdata, handles)
 slider_value = get(hObject, 'Value');
-set(handles.radiusText, 'String', num2str(slider_value));
+set(handles.radiusText, 'String', ['Radius = ' num2str(slider_value)]);
 set(handles.figure1, 'Pointer', 'custom', 'PointerShapeCData',...
     generate_pointer([16,16], get(handles.radiusSlider,...
     'Value')), 'PointerShapeHotSpot', [16,16]);
@@ -458,7 +469,6 @@ else
     set(handles.clusterRButton, 'value', 1);
     set(get(handles.segIm, 'children'), 'visible', 'off');
     set(handles.result1Str, 'String', []);
-    set(handles.result2Str, 'String', []);
     set(handles.cropButton, 'enable', 'on');
     
     % Resize image width to 3120
@@ -479,6 +489,7 @@ else
     
     remindTxt = 'Press the CROP IMAGE Button NOW to get the ROI';
     set(handles.remindStr, 'String', remindTxt);
+    set(handles.recountButton, 'Visible', 'off');
 end
 
 
@@ -499,7 +510,7 @@ set(handles.drawButton, 'enable', 'on');
 set(handles.radiusSlider, 'enable', 'on');
 remindTxt = 'Operate the LABEL MANUALLY section';
 set(handles.remindStr, 'String', remindTxt);
-set(handles.radiusText, 'String', num2str(get(handles.radiusSlider, 'Value')));
+set(handles.radiusText, 'String', ['Radius = ' num2str(get(handles.radiusSlider, 'Value'))]);
 
 
 function AutoDetectionRButton_Callback(hObject, eventdata, handles)
@@ -520,13 +531,13 @@ switch(eventdata.VerticalScrollCount)
         % Mouse wheel roll up
         if value < get(handles.radiusSlider, 'Max')
             set(handles.radiusSlider, 'Value', value + 1);
-            set(handles.radiusText, 'String', num2str(value+1));
+            set(handles.radiusText, 'String', ['Radius = ' num2str(value+1)]);
         end
     case 1
         % Mouse wheel roll down
         if value > get(handles.radiusSlider, 'Min')
             set(handles.radiusSlider, 'Value', value - 1);
-            set(handles.radiusText, 'String', num2str(value-1));
+            set(handles.radiusText, 'String', ['Radius = ' num2str(value-1)]);
         end
 end
 
@@ -555,12 +566,12 @@ switch(eventdata.Key)
     case 'q'
         if value < get(handles.radiusSlider, 'Max')
             set(handles.radiusSlider, 'Value', value + 1);
-            set(handles.radiusText, 'String', num2str(value+1));
+            set(handles.radiusText, 'String', ['Radius = ' num2str(value+1)]);
         end
     case 'e'
         if value > get(handles.radiusSlider, 'Min')
             set(handles.radiusSlider, 'Value', value - 1);
-            set(handles.radiusText, 'String', num2str(value-1));
+            set(handles.radiusText, 'String', ['Radius = ' num2str(value-1)]);
         end
 end
 
@@ -573,7 +584,7 @@ end
 
 function voteSlider_Callback(hObject, eventdata, handles)
 votes = get(hObject, 'Value');
-set(handles.voteText, 'String', num2str(votes));
+set(handles.voteText, 'String', ['Minimum Required Votes = ' num2str(votes)]);
 ballotBox1 = getappdata(handles.figure1, 'ballotBox1');
 ballotBox2 = getappdata(handles.figure1, 'ballotBox2');
 imgSeg1 = false(size(ballotBox1)); imgSeg2 = imgSeg1;
@@ -585,6 +596,14 @@ axes(handles.segIm);
 image2 = imshow(imgSeg, 'Parent', handles.segIm); impixelinfo;
 set(image2,'ButtonDownFcn',{@segIm_ButtonDownFcn, handles});
 setappdata(handles.segIm, 'imgSeg', imgSeg);
+set(handles.recountButton, 'Visible', 'on');
+
+if strcmp(get(handles.CompareTool, 'State'), 'on')
+    % Redisplay comparing circle
+    point = getappdata(handles.figure1, 'comparingCircleCenter');
+    viscircles(point, (handles.segIm.XLim(2)-handles.segIm.XLim(1))/22, 'Color', 'r');
+end
+
 
 function voteSlider_CreateFcn(hObject, eventdata, handles)
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
@@ -595,10 +614,6 @@ set(hObject, 'Min', 1);
 set(hObject, 'Max', 9);
 set(hObject, 'Value', 4);
 set(hObject, 'SliderStep', [1/8 , 1/8]);
-set(hObject, 'Visible', 'off');
-
-
-function voteText_CreateFcn(hObject, eventdata, handles)
 set(hObject, 'Visible', 'off');
 
 
@@ -631,14 +646,23 @@ if strcmp(get(handles.CompareTool, 'State'), 'on')
     set(image2,'ButtonDownFcn',{@segIm_ButtonDownFcn, handles});
     point = get(handles.segIm,'CurrentPoint');
     point = point(1,1:2);
+    setappdata(handles.figure1, 'comparingCircleCenter', point);
     img = getappdata(handles.selectedIm, 'oriIm');
     if isempty(img)
         return
     end
     axes(handles.selectedIm);
     image1 = imshow(img, 'Parent', handles.selectedIm); impixelinfo;
-    set(image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn, handles});
-    viscircles(point, (handles.selectedIm.XLim(2)-handles.selectedIm.XLim(1))/22, 'Color', 'r');
     radius = getappdata(handles.figure1, 'radius');
     viscircles(size(img)/2, radius, 'Color', 'b');
+    viscircles(point, (handles.selectedIm.XLim(2)-handles.selectedIm.XLim(1))/22, 'Color', 'r');
+    set(image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn, handles});
+    axes(handles.segIm);
+    viscircles(point, (handles.segIm.XLim(2)-handles.segIm.XLim(1))/22, 'Color', 'r');
 end
+
+
+function recountButton_Callback(hObject, eventdata, handles)
+[numMin,numMax] = countCell(getimage(handles.segIm));
+set(handles.result1Str, 'String', [num2str(round(numMin)), ' to ',  num2str(round(numMax))]);
+set(hObject, 'Visible', 'off');
