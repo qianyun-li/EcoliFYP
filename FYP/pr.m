@@ -22,7 +22,7 @@ function varargout = pr(varargin)
 
 % Edit the above text to modify the response to help pr
 
-% Last Modified by GUIDE v2.5 17-May-2020 03:15:18
+% Last Modified by GUIDE v2.5 17-May-2020 04:13:50
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -51,7 +51,9 @@ function pr_OpeningFcn(hObject, ~, handles, varargin)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to pr (see VARARGIN)
-movegui('center');
+
+% movegui('center');
+hObject.WindowState = 'maximized';
 
 set(handles.selectedIm, 'visible', 'off');
 set(handles.segIm, 'visible', 'off');
@@ -103,7 +105,11 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     img = getappdata(handles.selectedIm, 'image');
     
     % preprocess
-    img = preprocess(img);
+    option = [get(handles.balanceLightCheckbox, 'Value'), ...
+        get(handles.gaussianBlurCheckbox, 'Value'), ...
+        get(handles.enhanceContrastCheckbox, 'Value')...
+        get(handles.openingCheckbox, 'Value')];
+    img = preprocess(img, option);
     
     % segmentation & show segmented image
     if get(handles.clusterRButton, 'value')
@@ -119,12 +125,9 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
         setappdata(handles.figure1, 'ballotBox2', ballotBox2);
         setappdata(handles.figure1, 'useKMeans', true);
     else
+        set(handles.remindStr, 'String', 'Computing...'); drawnow;
         imgSeg = otsuBinarize(img);
     end
-    
-    % Count using Cell Size Estimation
-    [numMin,numMax] = countCell(imgSeg);
-    str1 = [num2str(round(numMin)), ' to ',  num2str(round(numMax))];
     
     if get(handles.semiAutoRButton, 'value')
         % Overlay the image
@@ -146,15 +149,20 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     
     % Display the results
     axes(handles.segIm);
-    image2 = imshow(imgSeg, 'Parent', handles.segIm); impixelinfo;
+    image2 = imshow(imgSeg, 'Parent', handles.segIm); impixelinfo; drawnow;
     setappdata(handles.segIm, 'imgSeg', imgSeg);
     set(image2,'ButtonDownFcn',{@segIm_ButtonDownFcn, handles});
+    
+    % Count using Cell Size Estimation
+    set(handles.remindStr, 'String', 'Counting...'); drawnow;
+    [numMin,numMax] = countCell(imgSeg);
+    str1 = [num2str(round(numMin)), ' to ',  num2str(round(numMax))];
+    
     set(handles.result1Str, 'String', str1);
-    
-    remindTxt = 'Finished';
-    set(handles.remindStr, 'String', remindTxt);
-    
+    set(handles.remindStr, 'String', 'Finished');
     set(gca,{'xlim','ylim'}, getappdata(handles.figure1, 'original_zoom_level'))
+    
+    % Disable voteSlider when uses Otsu
     if getappdata(handles.figure1, 'useKMeans')
         status = 'on';
     else
@@ -164,6 +172,7 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     set(handles.voteSlider, 'Value', votes);
     set(handles.voteText, 'Visible', status);
     set(handles.voteText, 'String', ['Minimum Required Votes = ' num2str(votes)]);
+    
     set(handles.recountButton, 'Visible', 'off');
 end
 
@@ -644,7 +653,9 @@ end
 
 
 function recountButton_Callback(hObject, eventdata, handles)
+set(handles.remindStr, 'String', 'Counting...'); drawnow;
 [numMin,numMax] = countCell(getimage(handles.segIm));
+set(handles.remindStr, 'String', 'Finished');
 set(handles.result1Str, 'String', [num2str(round(numMin)), ' to ',  num2str(round(numMax))]);
 set(hObject, 'Visible', 'off');
 
