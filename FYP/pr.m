@@ -22,7 +22,7 @@ function varargout = pr(varargin)
 
 % Edit the above text to modify the response to help pr
 
-% Last Modified by GUIDE v2.5 17-May-2020 01:04:14
+% Last Modified by GUIDE v2.5 17-May-2020 03:15:18
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -97,6 +97,7 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     remindTxt = 'Please wait while running';
     set(handles.remindStr, 'String', remindTxt);
     setappdata(handles.figure1, 'useKMeans', false);
+    votes = 4;
     
     % get the image
     img = getappdata(handles.selectedIm, 'image');
@@ -108,7 +109,6 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     if get(handles.clusterRButton, 'value')
         blockSize = [50 50];
         nOL = getappdata(handles.figure1, 'nOL');
-        votes = 4;
         %         imgSeg = kmeansCluster(img,blockSize, nOL,tVote);
         [ballotBox1,ballotBox2] = vote(img,blockSize,nOL,get(handles.autoThreshCheckbox,'Value'));
         imgSeg1 = false(size(ballotBox1)); imgSeg2 = imgSeg1;
@@ -125,14 +125,6 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     % Count using Cell Size Estimation
     [numMin,numMax] = countCell(imgSeg);
     str1 = [num2str(round(numMin)), ' to ',  num2str(round(numMax))];
-    
-    %     % Count using Circle Labeling
-    %     if(get(handles.CirCheck, 'Value'))
-    %         [cs, rs] = imfindcircles(img, [2,25], 'Sensitivity', 0.83);
-    %         setappdata(handles.selectedIm, 'cs', cs);
-    %         setappdata(handles.selectedIm, 'rs', rs);
-    %         str2 = ['Circle Labeling: ', num2str(size(cs,1))];
-    %     end
     
     if get(handles.semiAutoRButton, 'value')
         % Overlay the image
@@ -159,14 +151,6 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     set(image2,'ButtonDownFcn',{@segIm_ButtonDownFcn, handles});
     set(handles.result1Str, 'String', str1);
     
-    %     axes(handles.selectedIm);
-    % %         imshow(img); impixelinfo;
-    %         [cs, rs] = imfindcircles(img, [2,25], 'Sensitivity', 0.83);
-    %         viscircles(cs, rs, 'EdgeColor', 'b');
-    %         str = ['The approximate number of cells is ', num2str(size(cs,1))];
-    %         set(handles.result1Str, 'String', str);
-    %     drawnow;
-    
     remindTxt = 'Finished';
     set(handles.remindStr, 'String', remindTxt);
     
@@ -182,9 +166,6 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     set(handles.voteText, 'String', ['Minimum Required Votes = ' num2str(votes)]);
     set(handles.recountButton, 'Visible', 'off');
 end
-
-
-function FileMenu_Callback(hObject, eventdata, handles)
 
 
 function SaveFig_Callback(hObject, eventdata, handles)
@@ -261,7 +242,7 @@ if ~isempty(img)
 %     p2 = get(handles.remindStr, 'Position');
 %     p3 = get(handles.selectedText, 'Position');
 %     p4 = get(handles.segmentedText, 'Position');
-%     p3(2) = 1/2*(p1(2)+p2(2)-p1(4))-p3(4);
+%     p3(2) = 1/4*(p1(3)+p1(4))+1/2*(p1(2)+p2(2)-p3(4)/2);
 %     p4(2) = p3(2);
 %     set(handles.selectedText, 'Position', p3);
 %     set(handles.segmentedText, 'Position', p4);
@@ -666,3 +647,11 @@ function recountButton_Callback(hObject, eventdata, handles)
 [numMin,numMax] = countCell(getimage(handles.segIm));
 set(handles.result1Str, 'String', [num2str(round(numMin)), ' to ',  num2str(round(numMax))]);
 set(hObject, 'Visible', 'off');
+
+
+function clusterRButton_Callback(hObject, eventdata, handles)
+set(handles.autoThreshCheckbox, 'Enable', 'on');
+
+
+function threshRButton_Callback(hObject, eventdata, handles)
+set(handles.autoThreshCheckbox, 'Enable', 'off');
