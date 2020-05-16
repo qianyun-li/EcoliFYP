@@ -47,6 +47,7 @@ rect = [center(1)-radius, center(2)-radius, radius*2, radius*2];
 img = imcrop(img, rect);
 imshow(img);
 
+
 % % denoising
 % img_ = wiener2(img, [8 8]);
 % % gaussian filter
@@ -75,7 +76,7 @@ img_ = preprocess(img);
 [~, loc] = findpeaks(f, 0:1:256);
 level = (loc(2)+loc(3)) / 255 * 0.35; 
 bw = imbinarize(img_,level);
-figure, imshow(bw);
+imshow(bw);
 
 % [rows,cols] = size(img_);
 % blockSizeR = 100;
@@ -100,27 +101,33 @@ figure, imshow(bw);
 % img_ = cell2mat(ca);
 % figure, imshow(img_);
 
+D = bwdist(~bw);
+mask_em = imextendedmax(D, 0.9);
+% figure, imshowpair(bw, mask_em, 'blend')
 
-% bw_perim = bwperim(bw);
-mask_em = imextendedmax(img_, 10);
-% overlay = imoverlay(img_, bw_perim | mask_em);
-% figure, imshow(overlay);
-% 
-img_c = imcomplement(img_);
-img_mod = imimposemin(img_c, ~bw | mask_em);
+D = -D;
+img_mod = imimposemin(D, mask_em);
 L = watershed(img_mod);
 bw2 = bw;
 bw2(L==0) = 0;
-figure, imshow(bw2);
-% % figure, imshow(label2rgb(L));
-% x = unique(L);
-% N = numel(x);
+figure,imshow(bw2);
+
+% D = -bwdist(~bw);
+% figure, imshow(D,[]);
+% % Ld = watershed(D);
+% % figure, imshow(label2rgb(Ld));
+% % 
+% % bw2 = bw;
+% % bw2(Ld == 0) = 0;
+% % figure, imshow(bw2);
 % 
-% for k = 1:N
-%     count(k) = sum(L==x(k),'all');
-% end
-% 
-% % figure, histogram(count(3:end));
+% mask = imextendedmin(D,1);
+% figure, imshowpair(bw,mask,'blend')
+% D2 = imimposemin(D,mask);
+% Ld2 = watershed(D2);
+% bw3 = bw;
+% bw3(Ld2 == 0) = 0;
+% figure, imshow(bw3);
 
 
 
