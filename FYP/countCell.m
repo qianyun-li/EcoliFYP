@@ -1,4 +1,4 @@
-function [numCellsMin,numCellsMax]  = countCell(bw)
+function [numCellsMin,numCellsMax, bwWS]  = countCell(bw)
     allCells = sum(bw(:) == 1);
     
     D = bwdist(~bw);
@@ -8,11 +8,11 @@ function [numCellsMin,numCellsMax]  = countCell(bw)
     img_mod = imimposemin(D, mask);
     L = watershed(img_mod);
 
-    bw2 = bw;
-    bw2(L==0) = 0;
+    bwWS = bw;
+    bwWS(L==0) = 0;
 %     figure, imshow(bw2);
 
-    cc = bwconncomp(bw2);
+    cc = bwconncomp(bwWS);
     numPixels = cellfun(@numel, cc.PixelIdxList);
 
 %     x = 0:50:max(numPixels);

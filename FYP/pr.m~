@@ -61,7 +61,6 @@ setappdata(handles.selectedIm, 'cs', 0);
 setappdata(handles.selectedIm, 'rs', 0);
 set(handles.drawButton, 'enable', 'off');
 set(handles.radiusSlider, 'enable', 'off');
-set(handles.popupMenu, 'visible', 'off');
 setappdata(handles.figure1, 'imgLoaded', false);
 setappdata(handles.figure1, 'nOL', 3);
 
@@ -160,8 +159,6 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     [numMin,numMax,imgSegWS] = countCell(imgSeg);
     setappdata(handles.segIm, 'imgSegWS', imgSegWS);
     str1 = [num2str(round(numMin)), ' to ',  num2str(round(numMax))];
-    
-    set(handles.popupMenu, 'visible','on');
     
     set(handles.result1Str, 'String', str1);
     set(handles.remindStr, 'String', 'Finished');
@@ -683,13 +680,13 @@ function popupMenu_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupMenu contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupMenu
 value = get(hObject, 'Value');
-axes(handles.segIm);
 if value == 1
-    imshow(getappdata(handles.segIm, 'imgSeg'));
+    if exist getappdata(handles.segIm, 'imgSeg')
+        axes(handles.segIm);
+        imshow(getappdata(handles.segIm, 'imgSeg', imgSeg));
+    end
 else
-    imshow(getappdata(handles.segIm, 'imgSegWS'));
-end
-        
+    if exist getappdata(handles.segIm, 'imgSegWS', imgSeg)
 
 % --- Executes during object creation, after setting all properties.
 function popupMenu_CreateFcn(hObject, eventdata, handles)
