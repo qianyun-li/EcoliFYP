@@ -34,6 +34,6 @@ function [numCellsMin,numCellsMax]  = countCell(bw)
 %     cellSizeMin = cellSize * 0.9;
 %     cellSizeMax = cellSize * 1.1;
     
-    numCellsMin = allCells / cellSizeMax;
-    numCellsMax = allCells / cellSizeMin;
+    numCellsMin = fix(allCells / cellSizeMax);
+    numCellsMax = fix(allCells / cellSizeMin);
 end
