@@ -22,7 +22,7 @@ function varargout = pr(varargin)
 
 % Edit the above text to modify the response to help pr
 
-% Last Modified by GUIDE v2.5 17-May-2020 13:47:18
+% Last Modified by GUIDE v2.5 17-May-2020 23:26:53
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -61,7 +61,6 @@ setappdata(handles.selectedIm, 'cs', 0);
 setappdata(handles.selectedIm, 'rs', 0);
 set(handles.drawButton, 'enable', 'off');
 set(handles.radiusSlider, 'enable', 'off');
-set(handles.popupMenu, 'visible', 'off');
 setappdata(handles.figure1, 'imgLoaded', false);
 setappdata(handles.figure1, 'nOL', 3);
 
@@ -94,6 +93,7 @@ function roiRButton_Callback(~, eventdata, handles)
 remindTxt = 'Press the CROP IMAGE to get the roi NOW';
 set(handles.remindStr, 'String', remindTxt);
 
+
 function runButton_Callback(hObject, ~, handles)
 
 if ~isempty(getappdata(handles.selectedIm, 'image'))
@@ -106,10 +106,8 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     img = getappdata(handles.selectedIm, 'image');
     
     % preprocess
-    option = [get(handles.balanceLightCheckbox, 'Value'), ...
-        get(handles.gaussianBlurCheckbox, 'Value'), ...
-        get(handles.enhanceContrastCheckbox, 'Value')...
-        get(handles.openingCheckbox, 'Value')];
+    option = [get(handles.openDisableCheckbox, 'Value'),...
+        get(handles.openRadiusSlider, 'Value')];
     img = preprocess(img, option);
     
     % segmentation & show segmented image
@@ -157,11 +155,8 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     % Count using Cell Size Estimation
     set(handles.remindStr, 'String', 'Counting...'); 
     set(handles.result1Str, 'String', '...'); drawnow;
-    [numMin,numMax,imgSegWS] = countCell(imgSeg);
-    setappdata(handles.segIm, 'imgSegWS', imgSegWS);
+    [numMin,numMax] = countCell(imgSeg);
     str1 = [num2str(round(numMin)), ' to ',  num2str(round(numMax))];
-    
-    set(handles.popupMenu, 'visible','on');
     
     set(handles.result1Str, 'String', str1);
     set(handles.remindStr, 'String', 'Finished');
@@ -445,7 +440,6 @@ set(hObject, 'SliderStep', [1/13 , 1/13]);
 
 % --- Executes on button press in loadImButton.
 function loadImButton_Callback(hObject, eventdata, handles)
-set(handles.popupMenu, 'visible', 'off');
 remindTxt = 'Load an image to start';
 set(handles.remindStr, 'String', remindTxt);
 axes(handles.selectedIm);
@@ -471,7 +465,7 @@ else
     img_ori = imresize(img_ori, 3120 / size(img_ori,2));
     setappdata(handles.selectedIm, 'oriIm', img_ori);
     
-    handles.image1 = imshow(img_ori,'Parent',handles.selectedIm);
+    handles.image1 = imshow(img_ori,'Parent',handles.selectedIm); drawnow;
     
     % top-hat filtering
     se = strel('disk',90);
@@ -675,32 +669,26 @@ function threshRButton_Callback(hObject, eventdata, handles)
 set(handles.autoThreshCheckbox, 'Enable', 'off');
 
 
-% --- Executes on selection change in popupMenu.
-function popupMenu_Callback(hObject, eventdata, handles)
-% hObject    handle to popupMenu (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns popupMenu contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from popupMenu
-value = get(hObject, 'Value');
-axes(handles.segIm);
-if value == 1
-    imshow(getappdata(handles.segIm, 'imgSeg'));
+function openDisableCheckbox_Callback(hObject, eventdata, handles)
+if get(hObject, 'Value') ~= 0
+    % Disable Opening
+    set(handles.openRadiusSlider, 'Enable', 'off');
 else
-    imshow(getappdata(handles.segIm, 'imgSegWS'));
+    set(handles.openRadiusSlider, 'Enable', 'on');
 end
-        
 
-% --- Executes during object creation, after setting all properties.
-function popupMenu_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to popupMenu (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
 
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
+function openRadiusSlider_Callback(hObject, eventdata, handles)
+radius = get(hObject, 'Value');
+set(handles.openRadiusText, 'String', ['Radius = ' num2str(radius)]);
+
+
+function openRadiusSlider_CreateFcn(hObject, eventdata, handles)
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
-set(hObject, 'String', {'Segmented Image'; 'Segmented Image with Watershed'});
+
+set(hObject, 'Min', 1);
+set(hObject, 'Max', 7);
+set(hObject, 'Value', 7);
+set(hObject, 'SliderStep', [1/6 , 1/6]);
