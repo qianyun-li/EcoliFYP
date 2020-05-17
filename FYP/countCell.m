@@ -2,38 +2,37 @@ function [numCellsMin,numCellsMax]  = countCell(bw)
     allCells = sum(bw(:) == 1);
     
     D = bwdist(~bw);
-    mask = imextendedmax(D, 0.8);
+    mask = imextendedmax(D, 0.9);
     % figure, imshowpair(bw, mask_em, 'blend')
     D = -D;
     img_mod = imimposemin(D, mask);
     L = watershed(img_mod);
 
-%     mask_em = imextendedmax(img, 10);
-%     img_c = imcomplement(img);
-%     img_mod = imimposemin(img_c, ~bw | mask_em);
-%     L = watershed(img_mod);
-
-%     bw2 = bw;
-%     bw2(L==0) = 0;
+    bw2 = bw;
+    bw2(L==0) = 0;
 %     figure, imshow(bw2);
 
-    x = unique(L);
-    N = numel(x);
-    count = zeros(1,N);
-    for k = 3:N
-        count(k) = sum(L==x(k),'all');
-    end
+    cc = bwconncomp(bw2);
+    numPixels = cellfun(@numel, cc.PixelIdxList);
+
+%     x = 0:50:max(numPixels);
+%     [f, ~] = ksdensity(numPixels,x);
+%     [~, loc] = findpeaks(f,x);
     
-    x = 0:100:max(count);
-    [f, ~] = ksdensity(count,x);
-    [~, loc] = findpeaks(f,x);
+%     cellSize = loc(1);
+%     if loc(1) < 200
+%         cellSize = loc(2);
+%     end
     
-    cellSize = loc(1);
-    if loc(1) < 200
-        cellSize = loc(2);
-    end
-    cellSizeMin = cellSize * 0.90;
-    cellSizeMax = cellSize * 1.1;
+    x = 0:50:max(numPixels);
+    [counts, ~] = histcounts(numPixels,x);
+    [~, idx] = max(counts);
+%     cellSize = (x(idx) + x(idx+1)) * 0.5;
+    cellSizeMin = x(idx);
+    cellSizeMax = x(idx+1);
+
+%     cellSizeMin = cellSize * 0.9;
+%     cellSizeMax = cellSize * 1.1;
     
     numCellsMin = allCells / cellSizeMax;
     numCellsMax = allCells / cellSizeMin;
