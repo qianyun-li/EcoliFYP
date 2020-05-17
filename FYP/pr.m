@@ -445,6 +445,7 @@ set(hObject, 'SliderStep', [1/13 , 1/13]);
 
 % --- Executes on button press in loadImButton.
 function loadImButton_Callback(hObject, eventdata, handles)
+set(handles.popupMenu, 'visible', 'off');
 remindTxt = 'Load an image to start';
 set(handles.remindStr, 'String', remindTxt);
 axes(handles.selectedIm);
