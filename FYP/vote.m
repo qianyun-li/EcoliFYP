@@ -118,16 +118,13 @@ max2 = aLoc(index2);
 tf_f = islocalmin(f2);
 i_f = find(tf_f > 0);
 
-if(size(i,2) == 1)
-    diff1 = [0 diff(f2)];
-    tf_diff = islocalmin(diff1);
-    i_diff = find(tf_diff > 0);
-    min2 = x2(i_diff(2)) + aStep;
+if(size(i_f,2) == 1)
+    min2 = x2(i_f(1));
+    aTh = (min2 + max2) * 0.54;
 else
     min2 = x2(i_f(2));
+    aTh = (min2 + max2) * 0.43;
 end
-
-aTh = (min2 + max2) * 0.43;
 
 %     figure("Name","variance histogram"); histV = histogram(v); histV; %function histcounts
 %     figure("Name","average  histogram"); histAvg = histogram(avg); histAvg;
