@@ -52,7 +52,7 @@ blockSize = [50 50]; nOL = 3; tVote = 0.4;
 imgSeg = kmeansCluster(img,blockSize, nOL,tVote);
 figure('Name','Autothresholding'), imshow(imgSeg);
 
-[numMin,numMax] = countCell(img, imgSeg);
+[numMin,numMax] = colonyCount(img, imgSeg);
 disp(['The approximate number of cells is ', num2str(round(numMin)), ' to ',  num2str(round(numMax))]);
 
 function roiEventHappend(src,evt)

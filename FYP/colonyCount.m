@@ -1,4 +1,4 @@
-function [numCellsMin,numCellsMax]  = countCell(bw)
+function [numCellsMin,numCellsMax]  = colonyCount(bw)
     allCells = sum(bw(:) == 1);
     
     D = bwdist(~bw);
