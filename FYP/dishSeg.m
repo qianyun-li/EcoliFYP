@@ -5,10 +5,13 @@ function [center,radius, rect] = dishSeg(img)
     grayImage = uint8(255 * mat2gray(mag));
     level = graythresh(grayImage);
     bw = imbinarize(grayImage,level);
-    bw = imresize(bw,10);
+    bw = imresize(bw,size(img));
     
     mask = imfill(bw, 'holes');
-    mask = bwareaopen(mask, 10000);
+    cc = bwconncomp(mask);
+    PixelIdList = cc.PixelIdxList;
+    mask = false(size(mask));
+    mask(PixelIdList{1}) = 1;
     
     img(~mask) = 0;
     
