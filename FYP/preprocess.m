@@ -2,7 +2,7 @@ function img = preprocess(img, option)
 mask = ~(img == 0);
 
 % Even Illumination
-w = 25; img_filtered = img;
+w = 40; img_filtered = img;
 img_filtered(mask==0) = round(sum(img,'all') / sum(mask,'all'));
 img_filtered = roifilt2(img_filtered,mask,@(x) ordfilt2(x,1,ones(w,w),'symmetric'));
 img_filtered = roifilt2(img_filtered,mask,@(x) imfilter(x,ones(w,w)/(w*w),'symmetric'));

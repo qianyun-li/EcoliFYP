@@ -304,26 +304,20 @@ function CellCir_OffCallback(hObject, eventdata, handles)
 set(handles.figure1, 'Pointer', 'arrow');
 
 % --- Executes on mouse press over axes background.
-function selectedIm_ButtonDownFcn(hObject, eventdata, handles)
+function selectedIm_ButtonDownFcn(~, ~, handles)
 if strcmp(get(handles.CompareTool, 'State'), 'on')
-    img = getappdata(handles.selectedIm, 'oriIm');
-    image1 = imshow(img, 'Parent', handles.selectedIm); impixelinfo;
-    set(image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn, handles});
     point = get(handles.selectedIm,'CurrentPoint');
     point = point(1,1:2);
     setappdata(handles.figure1, 'comparingCircleCenter', point);
-    imgSeg = getappdata(handles.segIm, 'imgSeg');
-    if isempty(imgSeg)
-        return
+    circleCompared = getappdata(handles.figure1, 'circleCompared');
+    if ~isempty(circleCompared)
+        delete(circleCompared{1});
+        delete(circleCompared{2});
     end
-    radius = getappdata(handles.figure1, 'radius');
-    viscircles(size(img)/2, radius, 'Color', 'b');
+    circleA = viscircles(point, (handles.selectedIm.XLim(2)-handles.selectedIm.XLim(1))/22, 'Color', 'r');
     axes(handles.segIm);
-    image2 = imshow(imgSeg, 'Parent', handles.segIm); impixelinfo;
-    viscircles(point, (handles.segIm.XLim(2)-handles.segIm.XLim(1))/22, 'Color', 'r');
-    set(image2,'ButtonDownFcn',{@segIm_ButtonDownFcn, handles});
-    axes(handles.selectedIm);
-    viscircles(point, (handles.selectedIm.XLim(2)-handles.selectedIm.XLim(1))/22, 'Color', 'r');
+    circleB = viscircles(point, (handles.segIm.XLim(2)-handles.segIm.XLim(1))/22, 'Color', 'r');
+    setappdata(handles.figure1, 'circleCompared', {circleA, circleB});
 end
 
 if ~strcmp(get(handles.CellCir,'State'),'on')
@@ -591,7 +585,9 @@ set(handles.recountButton, 'Visible', 'on');
 if strcmp(get(handles.CompareTool, 'State'), 'on')
     % Redisplay comparing circle
     point = getappdata(handles.figure1, 'comparingCircleCenter');
-    viscircles(point, (handles.segIm.XLim(2)-handles.segIm.XLim(1))/22, 'Color', 'r');
+    circleB = viscircles(point, (handles.segIm.XLim(2)-handles.segIm.XLim(1))/22, 'Color', 'r');
+    circleCompared = getappdata(handles.figure1, 'circleCompared');
+    setappdata(handles.figure1, 'circleCompared', {circleCompared{1}, circleB});
 end
 
 
@@ -612,43 +608,27 @@ set(handles.CellCir, 'State', 'off');
 
 
 function CompareTool_OffCallback(hObject, eventdata, handles)
-imgSeg = getappdata(handles.segIm, 'imgSeg');
-if ~isempty(imgSeg)
-    axes(handles.segIm);
-    image2 = imshow(imgSeg, 'Parent', handles.segIm); impixelinfo;
-    set(image2,'ButtonDownFcn',{@segIm_ButtonDownFcn, handles});
-end
-
-img = getappdata(handles.selectedIm, 'oriIm');
-if ~isempty(img)
-    axes(handles.selectedIm);
-    image1 = imshow(img, 'Parent', handles.selectedIm); impixelinfo;
-    set(image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn, handles});
-    radius = getappdata(handles.figure1, 'radius');
-    viscircles(size(img)/2, radius, 'Color', 'b');
+circleCompared = getappdata(handles.figure1, 'circleCompared');
+if ~isempty(circleCompared)
+    delete(circleCompared{1});
+    delete(circleCompared{2});
 end
 
 
-function segIm_ButtonDownFcn(hObject, ~, handles)
+function segIm_ButtonDownFcn(~, ~, handles)
 if strcmp(get(handles.CompareTool, 'State'), 'on')
-    imgSeg = getappdata(handles.segIm, 'imgSeg');
-    image2 = imshow(imgSeg, 'Parent', handles.segIm); impixelinfo;
-    set(image2,'ButtonDownFcn',{@segIm_ButtonDownFcn, handles});
     point = get(handles.segIm,'CurrentPoint');
     point = point(1,1:2);
+    circleCompared = getappdata(handles.figure1, 'circleCompared');
     setappdata(handles.figure1, 'comparingCircleCenter', point);
-    img = getappdata(handles.selectedIm, 'oriIm');
-    if isempty(img)
-        return
+    if ~isempty(circleCompared)
+        delete(circleCompared{1});
+        delete(circleCompared{2});
     end
+    circleB = viscircles(point, (handles.segIm.XLim(2)-handles.segIm.XLim(1))/22, 'Color', 'r');
     axes(handles.selectedIm);
-    image1 = imshow(img, 'Parent', handles.selectedIm); impixelinfo;
-    radius = getappdata(handles.figure1, 'radius');
-    viscircles(size(img)/2, radius, 'Color', 'b');
-    viscircles(point, (handles.selectedIm.XLim(2)-handles.selectedIm.XLim(1))/22, 'Color', 'r');
-    set(image1,'ButtonDownFcn',{@selectedIm_ButtonDownFcn, handles});
-    axes(handles.segIm);
-    viscircles(point, (handles.segIm.XLim(2)-handles.segIm.XLim(1))/22, 'Color', 'r');
+    circleA = viscircles(point, (handles.selectedIm.XLim(2)-handles.selectedIm.XLim(1))/22, 'Color', 'r');
+    setappdata(handles.figure1, 'circleCompared', {circleA, circleB});
 end
 
 
