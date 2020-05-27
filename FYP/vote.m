@@ -39,23 +39,6 @@ for i = 1 : xStep : xEnd
             continue;
         end
         
-        %             wavelength = 2.^(0:2) * 4;
-        %             orientation = 0:65:130;
-        %             g = gabor(wavelength,orientation);
-        %             gabormag = imgaborfilt(B,g);
-        %             for q = 1:length(g)
-        %                 sigma = 0.5*g(q).Wavelength;
-        %                 gabormag(:,:,q) = imgaussfilt(gabormag(:,:,q),3*sigma);
-        %             end
-        %             nrows = size(B,1);
-        %             ncols = size(B,2);
-        %             [X,Y] = meshgrid(1:ncols,1:nrows);
-        %             [~, SI] = graycomatrix(B, 'Offset', [2 0], 'Symmetric', true);
-        %             GCImg  = imgaussfilt(rescale(SI));
-        %             featureSet = cat(3,B,GCImg);
-        %             [L1,C1] = imsegkmeans(featureSet,nSeg1,'NormalizeInput',true);
-        %             [L2,C2] = imsegkmeans(featureSet,nSeg2,'NormalizeInput',true);
-        
         [L1,C1] = imsegkmeans(B,nSeg1);  [L2, C2] = imsegkmeans(B,nSeg2);
         [~,index1] = sort(C1,'descend'); [~, index2] = sort(C2, 'descend');
         if ~all(C1==0)

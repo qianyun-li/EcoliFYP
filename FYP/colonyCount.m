@@ -3,7 +3,7 @@ function [numCellsMin,numCellsMax]  = colonyCount(bw)
     
     D = bwdist(~bw);
     mask = imextendedmax(D, 0.9);
-    % figure, imshowpair(bw, mask_em, 'blend')
+    % figure, imshowpair(bw, mask, 'blend')
     D = -D;
     img_mod = imimposemin(D, mask);
     L = watershed(img_mod);
