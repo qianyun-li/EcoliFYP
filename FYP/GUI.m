@@ -359,7 +359,7 @@ set(handles.v,'HitTest','off');
 
 function drawButton_Callback(hObject, eventdata, handles)
 if ~isempty(getappdata(handles.selectedIm, 'image'))
-    remindTxt = "Draw the ROI and Circle the cells using the CIRCLE IN TOOLBAR. Then RUN";
+    remindTxt = "Draw the ROI and Circle the cells using the CIRCLE IN TOOLBAR.RUN";
     set(handles.remindStr, 'String', remindTxt);
     roi = drawcircle();
     setappdata(handles.selectedIm, 'r', []);
