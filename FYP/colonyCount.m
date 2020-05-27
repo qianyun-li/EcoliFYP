@@ -19,10 +19,8 @@ function [numCellsMin,numCellsMax]  = colonyCount(bw)
     [f, ~] = ksdensity(numPixels,x);
     [~, loc] = findpeaks(f,x);
     
-    cellSize = loc(1);
-    if loc(1) < 200
-        cellSize = loc(2);
-    end
+    [~, idx] = max(loc);
+    cellSize = loc(idx);
     
 %     x = 0:50:max(numPixels);
 %     [counts, ~] = histcounts(numPixels,x);
