@@ -443,7 +443,10 @@ str = [pname fname];
 if isequal(fname, 0) || isequal(pname, 0)
     return;
 else
-    img_ori = rgb2gray(imread(str));
+    img_ori = imread(str);
+    if size(img_ori,3) == 3
+        img_ori = rgb2gray(img_ori);
+    end
     setappdata(handles.selectedIm, 'oriIm', img_ori);
     setappdata(handles.selectedIm, 'cs', 0);
     setappdata(handles.selectedIm, 'rs', 0);
