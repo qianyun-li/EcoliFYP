@@ -152,6 +152,13 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     setappdata(handles.segIm, 'imgSeg', imgSeg);
     set(image2,'ButtonDownFcn',{@segIm_ButtonDownFcn, handles});
     
+    if strcmp(get(handles.CompareTool, 'State'), 'on')
+        point = getappdata(handles.figure1, 'comparingCircleCenter');
+        circleB = viscircles(point, (handles.segIm.XLim(2)-handles.segIm.XLim(1))/22, 'Color', 'r'); drawnow;
+        circleCompared = getappdata(handles.figure1, 'circleCompared');
+        setappdata(handles.figure1, 'circleCompared', {circleCompared{1}, circleB});
+    end
+    
     % Count using Cell Size Estimation
     set(handles.remindStr, 'String', 'Counting...'); 
     set(handles.result1Str, 'String', '...'); drawnow;
