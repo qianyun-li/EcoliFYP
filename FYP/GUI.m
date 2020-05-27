@@ -171,7 +171,7 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     set(handles.voteSlider, 'Visible', status);
     set(handles.voteSlider, 'Value', votes);
     set(handles.voteText, 'Visible', status);
-    set(handles.voteText, 'String', ['Minimum Required Votes = ' num2str(votes)]);
+    set(handles.voteText, 'String', ['Threshold of Votes = ' num2str(votes)]);
     
     set(handles.recountButton, 'Visible', 'off');
 end
@@ -188,10 +188,11 @@ function Save_Callback(hObject, eventdata, handles)
 
 
 function SaveSegIm_Callback(hObject, eventdata, handles)
-if ~isempty(getappdata(handles.segIm, 'image'))
+imgSeg = getimage(handles.segIm);
+if ~isempty(imgSeg)
     [fname, pname] = uiputfile('*.bmp;*.jpg;*.png;*.jpeg;*.tif');
     if ~(isequal(fname, 0) || isequal(pname, 0))
-        imwrite(getimage(handles.segIm), fullfile(pname, fname));
+        imwrite(imgSeg, fullfile(pname, fname));
     end
 else
     warndlg('No segmented image found!');
@@ -573,7 +574,7 @@ end
 
 function voteSlider_Callback(hObject, eventdata, handles)
 votes = get(hObject, 'Value');
-set(handles.voteText, 'String', ['Minimum Required Votes = ' num2str(votes)]);
+set(handles.voteText, 'String', ['Threshold of Votes = ' num2str(votes)]);
 ballotBox1 = getappdata(handles.figure1, 'ballotBox1');
 ballotBox2 = getappdata(handles.figure1, 'ballotBox2');
 imgSeg1 = false(size(ballotBox1)); imgSeg2 = imgSeg1;
