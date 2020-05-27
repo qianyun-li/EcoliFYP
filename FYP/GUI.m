@@ -359,7 +359,7 @@ set(handles.v,'HitTest','off');
 
 function drawButton_Callback(hObject, eventdata, handles)
 if ~isempty(getappdata(handles.selectedIm, 'image'))
-    remindTxt = "Draw the ROI and Circle the cells using the CIRCLE IN TOOLBAR.RUN";
+    remindTxt = "Draw the ROI and Circle the cells using the CIRCLE IN TOOLBAR. Then RUN";
     set(handles.remindStr, 'String', remindTxt);
     roi = drawcircle();
     setappdata(handles.selectedIm, 'r', []);
@@ -454,6 +454,8 @@ else
     set(get(handles.segIm, 'children'), 'visible', 'off');
     set(handles.result1Str, 'String', []);
     set(handles.cropButton, 'enable', 'on');
+    set(handles.drawButton, 'enable', 'off');
+    set(handles.radiusSlider, 'enable', 'off');
     
     % Resize image width to 3120
     img_ori = imresize(img_ori, 3120 / size(img_ori,2));
