@@ -154,13 +154,15 @@ if ~isempty(getappdata(handles.selectedIm, 'image'))
     
     if strcmp(get(handles.CompareTool, 'State'), 'on')
         point = getappdata(handles.figure1, 'comparingCircleCenter');
-        circleB = viscircles(point, (handles.segIm.XLim(2)-handles.segIm.XLim(1))/22, 'Color', 'r'); drawnow;
-        circleCompared = getappdata(handles.figure1, 'circleCompared');
-        setappdata(handles.figure1, 'circleCompared', {circleCompared{1}, circleB});
+        if ~isempty(point)
+            circleB = viscircles(point, (handles.segIm.XLim(2)-handles.segIm.XLim(1))/22, 'Color', 'r'); drawnow;
+            circleCompared = getappdata(handles.figure1, 'circleCompared');
+            setappdata(handles.figure1, 'circleCompared', {circleCompared{1}, circleB});
+        end
     end
     
     % Count using Cell Size Estimation
-    set(handles.remindStr, 'String', 'Counting...'); 
+    set(handles.remindStr, 'String', 'Counting...');
     set(handles.result1Str, 'String', '...'); drawnow;
     [numMin,numMax] = colonyCount(imgSeg);
     str1 = [num2str(round(numMin)), ' to ',  num2str(round(numMax))];
@@ -254,15 +256,6 @@ if ~isempty(img)
     set(handles.cropButton, 'enable', 'off');
     remindTxt = 'Choose the DEGREE';
     set(handles.remindStr, 'String', remindTxt);
-    
-%     p1 = get(handles.selectedIm, 'Position');
-%     p2 = get(handles.remindStr, 'Position');
-%     p3 = get(handles.selectedText, 'Position');
-%     p4 = get(handles.segmentedText, 'Position');
-%     p3(2) = 1/4*(p1(3)+p1(4))+1/2*(p1(2)+p2(2)-p3(4)/2);
-%     p4(2) = p3(2);
-%     set(handles.selectedText, 'Position', p3);
-%     set(handles.segmentedText, 'Position', p4);
 end
 
 function roiSelect(src,evt,varargin)
@@ -646,7 +639,7 @@ end
 
 
 function recountButton_Callback(hObject, eventdata, handles)
-set(handles.remindStr, 'String', 'Counting...'); 
+set(handles.remindStr, 'String', 'Counting...');
 set(handles.result1Str, 'String', '...'); drawnow;
 [numMin,numMax] = colonyCount(getimage(handles.segIm));
 set(handles.remindStr, 'String', 'Finished');
