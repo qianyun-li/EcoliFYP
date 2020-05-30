@@ -2,7 +2,7 @@ function [numCellsMin,numCellsMax]  = colonyCount(bw)
     allCells = sum(bw(:) == 1);
     
     D = bwdist(~bw);
-    mask = imextendedmax(D, 0.9);
+    mask = imextendedmax(D, 0.7);
     % figure, imshowpair(bw, mask, 'blend')
     D = -D;
     img_mod = imimposemin(D, mask);
@@ -15,7 +15,7 @@ function [numCellsMin,numCellsMax]  = colonyCount(bw)
     cc = bwconncomp(bwWS);
     numPixels = cellfun(@numel, cc.PixelIdxList);
 
-    x = 0:50:max(numPixels);
+    x = 0:25:max(numPixels);
     [f, ~] = ksdensity(numPixels,x);
     [counts, loc] = findpeaks(f,x);
     
