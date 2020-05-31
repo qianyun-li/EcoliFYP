@@ -32,6 +32,6 @@ function [numCellsMin,numCellsMax]  = colonyCount(bw)
     cellSizeMin = cellSize * 0.95;
     cellSizeMax = cellSize * 1.05;
     
-    numCellsMin = fix(allCells / cellSizeMax);
-    numCellsMax = fix(allCells / cellSizeMin);
+    numCellsMin = round(allCells / cellSizeMax);
+    numCellsMax = round(allCells / cellSizeMin);
 end
