@@ -439,7 +439,7 @@ remindTxt = 'Load an image to start';
 set(handles.remindStr, 'String', remindTxt);
 axes(handles.selectedIm);
 [fname,pname] = uigetfile({'*.bmp;*.jpg;*.png;*.jpeg;*.tif'},...
-    'Pick an image', '/image/');
+    'Pick an image', '../data/');
 str = [pname fname];
 if isequal(fname, 0) || isequal(pname, 0)
     return;
