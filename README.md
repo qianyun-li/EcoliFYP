@@ -7,7 +7,7 @@ Microbiological research and analysis often rely on colony counting to estimate 
 
 ## Installation
 ### Method 1
-* Download MATLAB 2018b or newer
+* Download MATLAB 2018b or newer with Image Processing Toolbox, Statistics and Machine Learning Toolbox, Signal Processing Toolbox
 * RUN 'src/GUI.m' using MATLAB
 
 ### Method 2: For Windows
