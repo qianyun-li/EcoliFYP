@@ -11,7 +11,7 @@ Microbiological research and analysis often rely on colony counting to estimate 
 * RUN 'src/GUI.m' using MATLAB
 
 ### Method 2: For Windows
-* Directly download the application from [this link] () 
+* Directly download the application from https://uofmacau-my.sharepoint.com/:u:/g/personal/db62303_umac_mo/Eb_y_-rBhJNJhugDbg72rOYBdwS87MWPDSm8zFS7_r9wUw?e=w074US
 * Run the application
 
 ### Method 2: For Mac
